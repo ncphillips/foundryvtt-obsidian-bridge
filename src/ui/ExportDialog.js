@@ -7,16 +7,18 @@ import { updateTreeSelectionById } from './updateTreeSelection.js';
 import executePipeline from '../pipeline/executePipeline.js';
 import createExportPipeline from '../pipeline/exportPipeline.js';
 import ProgressModal from './ProgressModal.js';
+import { loadDialogPreferences, saveDialogPreferences } from './preferences.js';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 export default class ExportDialog extends HandlebarsApplicationMixin(ApplicationV2) {
     constructor(options = {}) {
         super(options);
+        const savedPrefs = loadDialogPreferences('export');
         this.journalTree = buildJournalTree();
-        this.merge = false;
-        this.exportAssets = false;
-        this.assetPathPrefix = `worlds/${game.world.id}/obsidian-assets`;
+        this.merge = savedPrefs.merge ?? false;
+        this.exportAssets = savedPrefs.exportAssets ?? false;
+        this.assetPathPrefix = savedPrefs.assetPathPrefix ?? `worlds/${game.world.id}/obsidian-assets`;
         this.exportPath = '';
         this.directoryHandle = null;
         this.hasFilesystemAccess = typeof window.showDirectoryPicker === 'function';
@@ -215,6 +217,12 @@ export default class ExportDialog extends HandlebarsApplicationMixin(Application
             ui.notifications.warn(game.i18n.localize('obsidian-bridge.export.no-journals-selected'));
             return;
         }
+
+        await saveDialogPreferences('export', {
+            merge: this.merge,
+            exportAssets: this.exportAssets,
+            assetPathPrefix: this.assetPathPrefix
+        });
 
         const exportOptions = new ExportOptions({
             journals,

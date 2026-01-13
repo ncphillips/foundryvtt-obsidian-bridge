@@ -6,14 +6,20 @@ import { updateTreeSelection } from './updateTreeSelection';
 import executePipeline from '../pipeline/executePipeline';
 import createImportPipeline from '../pipeline/importPipeline';
 import ProgressModal from './ProgressModal.js';
+import { loadDialogPreferences, saveDialogPreferences } from './preferences.js';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 export default class ImportDialog extends HandlebarsApplicationMixin(ApplicationV2) {
     constructor(options = {}) {
         super(options);
+        const savedPrefs = loadDialogPreferences('import');
         this.importOptions = new ImportOptions({
-            dataPath: `worlds/${game.world.id}/obsidian-assets`
+            dataPath: savedPrefs.dataPath ?? `worlds/${game.world.id}/obsidian-assets`,
+            combineNotes: savedPrefs.combineNotes ?? false,
+            skipFolderCombine: savedPrefs.skipFolderCombine ?? false,
+            importAssets: savedPrefs.importAssets ?? false,
+            strictLineBreaks: savedPrefs.strictLineBreaks ?? false
         });
     }
 
@@ -233,6 +239,14 @@ export default class ImportDialog extends HandlebarsApplicationMixin(Application
             ui.notifications.warn(game.i18n.localize('obsidian-bridge.import.vault-path-hint'));
             return;
         }
+
+        await saveDialogPreferences('import', {
+            combineNotes: this.importOptions.combineNotes,
+            skipFolderCombine: this.importOptions.skipFolderCombine,
+            importAssets: this.importOptions.importAssets,
+            strictLineBreaks: this.importOptions.strictLineBreaks,
+            dataPath: this.importOptions.dataPath
+        });
 
         const showdownConverter = new showdown.Converter();
         Object.entries(CONST.SHOWDOWN_OPTIONS).forEach(([k, v]) => {
