@@ -9,6 +9,8 @@ export default class ImportOptions {
         vaultFileTree: null,
         combineNotes: false,
         skipFolderCombine: false,
+        splitByHeadings: false,
+        splitHeadingLevel: 1,
         importAssets: false,
         strictLineBreaks: false,
         dataPath: ''

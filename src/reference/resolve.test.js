@@ -1810,3 +1810,219 @@ describe('resolvePlaceholders - foundry:// protocol', () => {
         );
     });
 });
+
+describe('resolvePlaceholders - heading link resolution', () => {
+    let consoleWarnSpy;
+
+    beforeEach(() => {
+        consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+    });
+
+    afterEach(() => {
+        consoleWarnSpy.mockRestore();
+    });
+
+    it('should resolve [[Page#Heading]] to the split page UUID', () => {
+        const targetFile = new MarkdownFile({
+            filePath: 'Target.md',
+            lookupKeys: ['Target'],
+            content: '<p>Original content</p>',
+            links: [],
+            assets: [],
+            foundryPageUuid: 'JournalEntry.def456.JournalEntryPage.page1'
+        });
+        targetFile.splitPages = [
+            { name: 'Target', headingTitle: null, content: '<p>Intro</p>', foundryPageUuid: 'JournalEntry.def456.JournalEntryPage.page1' },
+            { name: 'History', headingTitle: 'History', content: '<p>History content</p>', foundryPageUuid: 'JournalEntry.def456.JournalEntryPage.page2' },
+            { name: 'Geography', headingTitle: 'Geography', content: '<p>Geography content</p>', foundryPageUuid: 'JournalEntry.def456.JournalEntryPage.page3' }
+        ];
+
+        const markdownFiles = [
+            new MarkdownFile({
+                filePath: 'Source.md',
+                lookupKeys: ['Source'],
+                content: '<p>See {{LINK:0}} for details.</p>',
+                links: [new Reference({
+                    source: '[[Target#History]]',
+                    obsidian: 'Target',
+                    label: null,
+                    type: 'document',
+                    isImage: false,
+                    placeholder: '{{LINK:0}}',
+                    metadata: { heading: 'History', isEmbed: false }
+                })],
+                assets: [],
+                foundryPageUuid: 'JournalEntry.abc123.JournalEntryPage.xyz789'
+            }),
+            targetFile
+        ];
+
+        const result = resolvePlaceholders(markdownFiles, []);
+
+        expect(result[0].content).toBe(
+            '<p>See @UUID[JournalEntry.def456.JournalEntryPage.page2]{Target} for details.</p>'
+        );
+    });
+
+    it('should fall back to file UUID when heading not found in split pages', () => {
+        const targetFile = new MarkdownFile({
+            filePath: 'Target.md',
+            lookupKeys: ['Target'],
+            content: '<p>Original content</p>',
+            links: [],
+            assets: [],
+            foundryPageUuid: 'JournalEntry.def456.JournalEntryPage.page1'
+        });
+        targetFile.splitPages = [
+            { name: 'Target', headingTitle: null, content: '<p>Intro</p>', foundryPageUuid: 'JournalEntry.def456.JournalEntryPage.page1' },
+            { name: 'History', headingTitle: 'History', content: '<p>History content</p>', foundryPageUuid: 'JournalEntry.def456.JournalEntryPage.page2' }
+        ];
+
+        const markdownFiles = [
+            new MarkdownFile({
+                filePath: 'Source.md',
+                lookupKeys: ['Source'],
+                content: '<p>See {{LINK:0}} for details.</p>',
+                links: [new Reference({
+                    source: '[[Target#NonExistent]]',
+                    obsidian: 'Target',
+                    label: null,
+                    type: 'document',
+                    isImage: false,
+                    placeholder: '{{LINK:0}}',
+                    metadata: { heading: 'NonExistent', isEmbed: false }
+                })],
+                assets: [],
+                foundryPageUuid: 'JournalEntry.abc123.JournalEntryPage.xyz789'
+            }),
+            targetFile
+        ];
+
+        const result = resolvePlaceholders(markdownFiles, []);
+
+        expect(result[0].content).toBe(
+            '<p>See @UUID[JournalEntry.def456.JournalEntryPage.page1]{Target} for details.</p>'
+        );
+    });
+
+    it('should resolve heading links case-insensitively', () => {
+        const targetFile = new MarkdownFile({
+            filePath: 'Target.md',
+            lookupKeys: ['Target'],
+            content: '<p>Original content</p>',
+            links: [],
+            assets: [],
+            foundryPageUuid: 'JournalEntry.def456.JournalEntryPage.page1'
+        });
+        targetFile.splitPages = [
+            { name: 'Important Section', headingTitle: 'Important Section', content: '<p>Content</p>', foundryPageUuid: 'JournalEntry.def456.JournalEntryPage.page2' }
+        ];
+
+        const markdownFiles = [
+            new MarkdownFile({
+                filePath: 'Source.md',
+                lookupKeys: ['Source'],
+                content: '<p>See {{LINK:0}} for details.</p>',
+                links: [new Reference({
+                    source: '[[Target#important section]]',
+                    obsidian: 'Target',
+                    label: null,
+                    type: 'document',
+                    isImage: false,
+                    placeholder: '{{LINK:0}}',
+                    metadata: { heading: 'important section', isEmbed: false }
+                })],
+                assets: [],
+                foundryPageUuid: 'JournalEntry.abc123.JournalEntryPage.xyz789'
+            }),
+            targetFile
+        ];
+
+        const result = resolvePlaceholders(markdownFiles, []);
+
+        expect(result[0].content).toBe(
+            '<p>See @UUID[JournalEntry.def456.JournalEntryPage.page2]{Target} for details.</p>'
+        );
+    });
+
+    it('should resolve [[Page]] to first page when file has split pages', () => {
+        const targetFile = new MarkdownFile({
+            filePath: 'Target.md',
+            lookupKeys: ['Target'],
+            content: '<p>Original content</p>',
+            links: [],
+            assets: [],
+            foundryPageUuid: 'JournalEntry.def456.JournalEntryPage.page1'
+        });
+        targetFile.splitPages = [
+            { name: 'Target', headingTitle: null, content: '<p>Intro</p>', foundryPageUuid: 'JournalEntry.def456.JournalEntryPage.page1' },
+            { name: 'History', headingTitle: 'History', content: '<p>History content</p>', foundryPageUuid: 'JournalEntry.def456.JournalEntryPage.page2' }
+        ];
+
+        const markdownFiles = [
+            new MarkdownFile({
+                filePath: 'Source.md',
+                lookupKeys: ['Source'],
+                content: '<p>See {{LINK:0}} for details.</p>',
+                links: [new Reference({
+                    source: '[[Target]]',
+                    obsidian: 'Target',
+                    label: null,
+                    type: 'document',
+                    isImage: false,
+                    placeholder: '{{LINK:0}}',
+                    metadata: { heading: null, isEmbed: false }
+                })],
+                assets: [],
+                foundryPageUuid: 'JournalEntry.abc123.JournalEntryPage.xyz789'
+            }),
+            targetFile
+        ];
+
+        const result = resolvePlaceholders(markdownFiles, []);
+
+        expect(result[0].content).toBe(
+            '<p>See @UUID[JournalEntry.def456.JournalEntryPage.page1]{Target} for details.</p>'
+        );
+    });
+
+    it('should also resolve links inside split page content', () => {
+        const targetFile = new MarkdownFile({
+            filePath: 'Target.md',
+            lookupKeys: ['Target'],
+            content: '<p>Original content</p>',
+            links: [new Reference({
+                source: '[[Other]]',
+                obsidian: 'Other',
+                label: null,
+                type: 'document',
+                isImage: false,
+                placeholder: '{{LINK:0}}',
+                metadata: { heading: null, isEmbed: false }
+            })],
+            assets: [],
+            foundryPageUuid: 'JournalEntry.def456.JournalEntryPage.page1'
+        });
+        targetFile.splitPages = [
+            { name: 'Target', headingTitle: null, content: '<p>See {{LINK:0}}</p>', foundryPageUuid: 'JournalEntry.def456.JournalEntryPage.page1' }
+        ];
+
+        const markdownFiles = [
+            targetFile,
+            new MarkdownFile({
+                filePath: 'Other.md',
+                lookupKeys: ['Other'],
+                content: '<p>Other content</p>',
+                links: [],
+                assets: [],
+                foundryPageUuid: 'JournalEntry.other.JournalEntryPage.other'
+            })
+        ];
+
+        resolvePlaceholders(markdownFiles, []);
+
+        expect(targetFile.splitPages[0].content).toBe(
+            '<p>See @UUID[JournalEntry.other.JournalEntryPage.other]{Other}</p>'
+        );
+    });
+});

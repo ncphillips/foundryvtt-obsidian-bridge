@@ -23,7 +23,7 @@
 
     <div class="form-group">
         <label>
-            <input type="checkbox" name="combineNotes" {{checked combineNotes}} data-toggle-visibility="skipFolderCombine" />
+            <input type="checkbox" name="combineNotes" {{checked combineNotes}} {{#if splitByHeadings}}disabled{{/if}} data-toggle-visibility="skipFolderCombine" />
             {{localize "obsidian-bridge.import.combine-notes-label"}}
         </label>
         <p class="hint">{{localize "obsidian-bridge.import.combine-notes-hint"}}</p>
@@ -36,6 +36,29 @@
             {{localize "obsidian-bridge.import.skip-folder-combine-label"}}
         </label>
         <p class="hint">{{localize "obsidian-bridge.import.skip-folder-combine-hint"}}</p>
+    </div>
+    {{/if}}
+
+    <div class="form-group">
+        <label>
+            <input type="checkbox" name="splitByHeadings" {{checked splitByHeadings}} {{#if combineNotes}}disabled{{/if}} data-toggle-visibility="splitHeadingLevel" />
+            {{localize "obsidian-bridge.import.split-by-headings-label"}}
+        </label>
+        <p class="hint">{{localize "obsidian-bridge.import.split-by-headings-hint"}}</p>
+    </div>
+
+    {{#if splitByHeadings}}
+    <div class="form-group" data-visibility-target="splitHeadingLevel">
+        <label for="obsidian-split-heading-level">{{localize "obsidian-bridge.import.split-heading-level-label"}}</label>
+        <select id="obsidian-split-heading-level" name="splitHeadingLevel" data-default="{{splitHeadingLevel}}">
+            <option value="1">H1</option>
+            <option value="2">H2</option>
+            <option value="3">H3</option>
+            <option value="4">H4</option>
+            <option value="5">H5</option>
+            <option value="6">H6</option>
+        </select>
+        <p class="hint">{{localize "obsidian-bridge.import.split-heading-level-hint"}}</p>
     </div>
     {{/if}}
 

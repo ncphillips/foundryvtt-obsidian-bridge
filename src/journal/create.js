@@ -117,7 +117,7 @@ async function createPages(entries, entryMap, createdPages) {
             const existing = existingPagesIndex.get(pagePlan.name);
 
             if (existing) {
-                pagePlan.markdownFile.foundryPageUuid = existing.uuid;
+                setPageUuid(pagePlan, existing.uuid);
                 continue;
             }
 
@@ -133,8 +133,19 @@ async function createPages(entries, entryMap, createdPages) {
 
             const page = pages[0];
             createdPages.push({ entry, page });
-            pagePlan.markdownFile.foundryPageUuid = page.uuid;
+            setPageUuid(pagePlan, page.uuid);
         }
+    }
+}
+
+function setPageUuid(pagePlan, uuid) {
+    if (pagePlan.splitPage) {
+        pagePlan.splitPage.foundryPageUuid = uuid;
+        if (!pagePlan.markdownFile.foundryPageUuid) {
+            pagePlan.markdownFile.foundryPageUuid = uuid;
+        }
+    } else {
+        pagePlan.markdownFile.foundryPageUuid = uuid;
     }
 }
 

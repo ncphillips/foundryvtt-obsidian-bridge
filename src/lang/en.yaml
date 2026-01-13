@@ -24,6 +24,12 @@ obsidian-bridge:
     strict-line-breaks-label: Strict line breaks
     strict-line-breaks-hint: When enabled, single line breaks follow standard markdown rules (collapsed to spaces). When disabled, single line breaks are preserved. Matches Obsidian's setting of the same name.
 
+    split-by-headings-label: Split files into pages by headings
+    split-by-headings-hint: When enabled, files with multiple headings at the selected level will become multiple journal pages within a single entry.
+
+    split-heading-level-label: Heading level
+    split-heading-level-hint: Split at headings of this level. Content before the first heading becomes a page with the file's name.
+
     data-path-label: Data path for non-markdown files
     data-path-hint: Directory where imported assets will be stored
 

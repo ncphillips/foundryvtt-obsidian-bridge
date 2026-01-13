@@ -1,4 +1,5 @@
 import JournalStructurePlan from '../domain/JournalStructurePlan.js';
+import { splitByHeadings } from '../content/splitByHeadings.js';
 
 export default function planJournalStructure(markdownFiles, options) {
     if (!markdownFiles || !Array.isArray(markdownFiles)) {
@@ -71,17 +72,17 @@ function buildFolderHierarchy(context, entries, options) {
 
 function buildJournalEntries(context, options) {
     if (!options.combineNotes) {
-        return buildSeparateEntries(context);
+        return buildSeparateEntries(context, options);
     }
 
     if (options.skipFolderCombine) {
-        return buildEntriesWithSkipFolderCombine(context);
+        return buildEntriesWithSkipFolderCombine(context, options);
     }
 
-    return buildCombinedEntries(context);
+    return buildCombinedEntries(context, options);
 }
 
-function buildSeparateEntries(context) {
+function buildSeparateEntries(context, options) {
     const entries = [];
 
     for (const file of context.files) {
@@ -92,17 +93,14 @@ function buildSeparateEntries(context) {
         entries.push({
             name,
             folderPath,
-            pages: [{
-                name,
-                markdownFile: file
-            }]
+            pages: buildPagesForFile(file, name, options)
         });
     }
 
     return entries;
 }
 
-function buildCombinedEntries(context) {
+function buildCombinedEntries(context, options) {
     const filesByFolder = groupFilesByFolder(context);
     const foldersWithSubfolders = findFoldersWithSubfolders(context);
     const entries = [];
@@ -115,10 +113,7 @@ function buildCombinedEntries(context) {
                 entries.push({
                     name,
                     folderPath: null,
-                    pages: [{
-                        name,
-                        markdownFile: file
-                    }]
+                    pages: buildPagesForFile(file, name, options)
                 });
             }
         } else if (files.length === 1) {
@@ -128,24 +123,21 @@ function buildCombinedEntries(context) {
             entries.push({
                 name,
                 folderPath,
-                pages: [{
-                    name,
-                    markdownFile: file
-                }]
+                pages: buildPagesForFile(file, name, options)
             });
         } else {
             const folderName = folderPath.split('/').pop();
             const hasSubfolders = foldersWithSubfolders.has(folderPath);
+            const pages = [];
+            for (const file of files) {
+                const relativePath = getRelativePath(context, file);
+                const fileName = getFileBasename(relativePath);
+                pages.push(...buildPagesForFile(file, fileName, options));
+            }
             entries.push({
                 name: folderName,
                 folderPath: hasSubfolders ? folderPath : getParentPath(folderPath),
-                pages: files.map(file => {
-                    const relativePath = getRelativePath(context, file);
-                    return {
-                        name: getFileBasename(relativePath),
-                        markdownFile: file
-                    };
-                })
+                pages
             });
         }
     }
@@ -153,7 +145,7 @@ function buildCombinedEntries(context) {
     return entries;
 }
 
-function buildEntriesWithSkipFolderCombine(context) {
+function buildEntriesWithSkipFolderCombine(context, options) {
     const foldersWithSubfolders = findFoldersWithSubfolders(context);
     const filesByFolder = groupFilesByFolder(context);
     const entries = [];
@@ -166,10 +158,7 @@ function buildEntriesWithSkipFolderCombine(context) {
                 entries.push({
                     name,
                     folderPath: null,
-                    pages: [{
-                        name,
-                        markdownFile: file
-                    }]
+                    pages: buildPagesForFile(file, name, options)
                 });
             }
         } else if (foldersWithSubfolders.has(folderPath) || files.length === 1) {
@@ -179,29 +168,57 @@ function buildEntriesWithSkipFolderCombine(context) {
                 entries.push({
                     name,
                     folderPath,
-                    pages: [{
-                        name,
-                        markdownFile: file
-                    }]
+                    pages: buildPagesForFile(file, name, options)
                 });
             }
         } else {
             const folderName = folderPath.split('/').pop();
+            const pages = [];
+            for (const file of files) {
+                const relativePath = getRelativePath(context, file);
+                const fileName = getFileBasename(relativePath);
+                pages.push(...buildPagesForFile(file, fileName, options));
+            }
             entries.push({
                 name: folderName,
                 folderPath: getParentPath(folderPath),
-                pages: files.map(file => {
-                    const relativePath = getRelativePath(context, file);
-                    return {
-                        name: getFileBasename(relativePath),
-                        markdownFile: file
-                    };
-                })
+                pages
             });
         }
     }
 
     return entries;
+}
+
+function buildPagesForFile(file, fileName, options) {
+    if (!options.splitByHeadings) {
+        return [{
+            name: fileName,
+            markdownFile: file
+        }];
+    }
+
+    const sections = splitByHeadings(file.content, options.splitHeadingLevel);
+
+    if (sections.length <= 1) {
+        return [{
+            name: fileName,
+            markdownFile: file
+        }];
+    }
+
+    file.splitPages = sections.map(section => ({
+        name: section.title || fileName,
+        headingTitle: section.title,
+        content: section.content,
+        foundryPageUuid: null
+    }));
+
+    return file.splitPages.map(splitPage => ({
+        name: splitPage.name,
+        markdownFile: file,
+        splitPage
+    }));
 }
 
 function groupFilesByFolder(context) {

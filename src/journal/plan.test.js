@@ -417,4 +417,164 @@ describe('planJournalStructure', () => {
             expect(plan.entries[0].pages[0].name).toBe('Ancient Red Dragon');
         });
     });
+
+    describe('splitByHeadings: true', () => {
+        function createMarkdownFileWithContent(filePath, content) {
+            return new MarkdownFile({
+                filePath,
+                lookupKeys: [],
+                content,
+                links: [],
+                assets: []
+            });
+        }
+
+        it('should create multiple pages from file with multiple H1 headings', () => {
+            const content = '<h1>History</h1><p>Historical content</p><h1>Geography</h1><p>Geographical content</p>';
+            const markdownFiles = [
+                createMarkdownFileWithContent('Dragons/Dragon Lore.md', content)
+            ];
+            const options = new ImportOptions({
+                combineNotes: false,
+                splitByHeadings: true,
+                splitHeadingLevel: 1
+            });
+
+            const plan = planJournalStructure(markdownFiles, options);
+
+            expect(plan.entries).toHaveLength(1);
+            expect(plan.entries[0].name).toBe('Dragon Lore');
+            expect(plan.entries[0].pages).toHaveLength(2);
+            expect(plan.entries[0].pages[0].name).toBe('History');
+            expect(plan.entries[0].pages[1].name).toBe('Geography');
+        });
+
+        it('should use file name for preamble page', () => {
+            const content = '<p>Introduction</p><h1>Main Section</h1><p>Content</p>';
+            const markdownFiles = [
+                createMarkdownFileWithContent('Dragon Lore.md', content)
+            ];
+            const options = new ImportOptions({
+                combineNotes: false,
+                splitByHeadings: true,
+                splitHeadingLevel: 1
+            });
+
+            const plan = planJournalStructure(markdownFiles, options);
+
+            expect(plan.entries[0].pages).toHaveLength(2);
+            expect(plan.entries[0].pages[0].name).toBe('Dragon Lore');
+            expect(plan.entries[0].pages[1].name).toBe('Main Section');
+        });
+
+        it('should populate splitPages on MarkdownFile', () => {
+            const content = '<h1>First</h1><p>A</p><h1>Second</h1><p>B</p>';
+            const file = createMarkdownFileWithContent('Test.md', content);
+            const options = new ImportOptions({
+                combineNotes: false,
+                splitByHeadings: true,
+                splitHeadingLevel: 1
+            });
+
+            planJournalStructure([file], options);
+
+            expect(file.splitPages).toHaveLength(2);
+            expect(file.splitPages[0].name).toBe('First');
+            expect(file.splitPages[0].headingTitle).toBe('First');
+            expect(file.splitPages[0].content).toBe('<p>A</p>');
+            expect(file.splitPages[0].foundryPageUuid).toBeNull();
+            expect(file.splitPages[1].name).toBe('Second');
+            expect(file.splitPages[1].headingTitle).toBe('Second');
+            expect(file.splitPages[1].content).toBe('<p>B</p>');
+        });
+
+        it('should include splitPage reference in page plan', () => {
+            const content = '<h1>Section</h1><p>Content</p><h1>Another</h1><p>More</p>';
+            const file = createMarkdownFileWithContent('Test.md', content);
+            const options = new ImportOptions({
+                combineNotes: false,
+                splitByHeadings: true,
+                splitHeadingLevel: 1
+            });
+
+            const plan = planJournalStructure([file], options);
+
+            expect(plan.entries[0].pages[0].splitPage).toBe(file.splitPages[0]);
+            expect(plan.entries[0].pages[1].splitPage).toBe(file.splitPages[1]);
+        });
+
+        it('should not split files with single heading', () => {
+            const content = '<h1>Only Section</h1><p>Content</p>';
+            const file = createMarkdownFileWithContent('Test.md', content);
+            const options = new ImportOptions({
+                combineNotes: false,
+                splitByHeadings: true,
+                splitHeadingLevel: 1
+            });
+
+            const plan = planJournalStructure([file], options);
+
+            expect(plan.entries[0].pages).toHaveLength(1);
+            expect(plan.entries[0].pages[0].name).toBe('Test');
+            expect(plan.entries[0].pages[0].splitPage).toBeUndefined();
+            expect(file.splitPages).toBeNull();
+        });
+
+        it('should not split files with no headings', () => {
+            const content = '<p>Just some content</p>';
+            const file = createMarkdownFileWithContent('Test.md', content);
+            const options = new ImportOptions({
+                combineNotes: false,
+                splitByHeadings: true,
+                splitHeadingLevel: 1
+            });
+
+            const plan = planJournalStructure([file], options);
+
+            expect(plan.entries[0].pages).toHaveLength(1);
+            expect(plan.entries[0].pages[0].name).toBe('Test');
+            expect(file.splitPages).toBeNull();
+        });
+
+        it('should split on H2 when splitHeadingLevel is 2', () => {
+            const content = '<h1>Title</h1><h2>First</h2><p>A</p><h2>Second</h2><p>B</p>';
+            const file = createMarkdownFileWithContent('Test.md', content);
+            const options = new ImportOptions({
+                combineNotes: false,
+                splitByHeadings: true,
+                splitHeadingLevel: 2
+            });
+
+            const plan = planJournalStructure([file], options);
+
+            expect(plan.entries[0].pages).toHaveLength(3);
+            expect(plan.entries[0].pages[0].name).toBe('Test');
+            expect(plan.entries[0].pages[1].name).toBe('First');
+            expect(plan.entries[0].pages[2].name).toBe('Second');
+        });
+
+        it('should work with combineNotes enabled', () => {
+            const content1 = '<h1>Section A</h1><p>A</p><h1>Section B</h1><p>B</p>';
+            const content2 = '<h1>Section C</h1><p>C</p><h1>Section D</h1><p>D</p>';
+            const markdownFiles = [
+                createMarkdownFileWithContent('Folder/File1.md', content1),
+                createMarkdownFileWithContent('Folder/File2.md', content2)
+            ];
+            const options = new ImportOptions({
+                combineNotes: true,
+                splitByHeadings: true,
+                splitHeadingLevel: 1
+            });
+
+            const plan = planJournalStructure(markdownFiles, options);
+
+            expect(plan.entries).toHaveLength(1);
+            expect(plan.entries[0].name).toBe('Folder');
+            expect(plan.entries[0].pages).toHaveLength(4);
+            expect(plan.entries[0].pages[0].name).toBe('Section A');
+            expect(plan.entries[0].pages[1].name).toBe('Section B');
+            expect(plan.entries[0].pages[2].name).toBe('Section C');
+            expect(plan.entries[0].pages[3].name).toBe('Section D');
+        });
+    });
 });

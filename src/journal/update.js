@@ -12,36 +12,64 @@ export async function updateContent(markdownFiles) {
     const updatedPages = [];
 
     for (const markdownFile of markdownFiles) {
-        if (!markdownFile.foundryPageUuid) {
-            console.warn(`Skipping file without UUID: ${markdownFile.filePath}`);
-            continue;
+        if (markdownFile.splitPages) {
+            for (let i = 0; i < markdownFile.splitPages.length; i++) {
+                const splitPage = markdownFile.splitPages[i];
+                const isFirstPage = i === 0;
+                const result = await updateSinglePage(
+                    splitPage.foundryPageUuid,
+                    splitPage.content,
+                    isFirstPage ? markdownFile.frontmatter : null,
+                    markdownFile.filePath
+                );
+                if (result) {
+                    updatedPages.push(result);
+                }
+            }
+        } else {
+            const result = await updateSinglePage(
+                markdownFile.foundryPageUuid,
+                markdownFile.content,
+                markdownFile.frontmatter,
+                markdownFile.filePath
+            );
+            if (result) {
+                updatedPages.push(result);
+            }
         }
-
-        const page = fromUuidSync(markdownFile.foundryPageUuid);
-
-        if (!page) {
-            throw new Error(`Page not found for UUID: ${markdownFile.foundryPageUuid} (${markdownFile.filePath})`);
-        }
-
-        const originalContent = page.text?.content || '';
-        const originalFrontmatter = page.flags?.['obsidian-bridge']?.frontmatter ?? null;
-        const originalLastSyncedAt = page.flags?.['obsidian-bridge']?.lastSyncedAt ?? null;
-
-        await page.update({
-            'text.content': markdownFile.content,
-            'flags.obsidian-bridge.frontmatter': markdownFile.frontmatter,
-            'flags.obsidian-bridge.lastSyncedAt': Date.now()
-        });
-
-        updatedPages.push({
-            page,
-            originalContent,
-            originalFrontmatter,
-            originalLastSyncedAt
-        });
     }
 
     return { updatedPages };
+}
+
+async function updateSinglePage(uuid, content, frontmatter, filePath) {
+    if (!uuid) {
+        console.warn(`Skipping page without UUID: ${filePath}`);
+        return null;
+    }
+
+    const page = fromUuidSync(uuid);
+
+    if (!page) {
+        throw new Error(`Page not found for UUID: ${uuid} (${filePath})`);
+    }
+
+    const originalContent = page.text?.content || '';
+    const originalFrontmatter = page.flags?.['obsidian-bridge']?.frontmatter ?? null;
+    const originalLastSyncedAt = page.flags?.['obsidian-bridge']?.lastSyncedAt ?? null;
+
+    await page.update({
+        'text.content': content,
+        'flags.obsidian-bridge.frontmatter': frontmatter,
+        'flags.obsidian-bridge.lastSyncedAt': Date.now()
+    });
+
+    return {
+        page,
+        originalContent,
+        originalFrontmatter,
+        originalLastSyncedAt
+    };
 }
 
 export async function rollbackUpdates(updatedPages) {

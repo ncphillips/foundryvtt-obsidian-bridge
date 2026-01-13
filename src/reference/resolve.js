@@ -7,15 +7,29 @@ export default function resolvePlaceholders(markdownFiles, nonMarkdownFiles) {
     }
 
     const linkMap = buildLinkMap(markdownFiles);
+    const headingMap = buildHeadingMap(markdownFiles);
     const assetFiles = buildAssetFiles(nonMarkdownFiles);
 
     for (const markdownFile of markdownFiles) {
         let content = markdownFile.content;
 
-        content = resolveLinks(content, markdownFile.links, linkMap, markdownFile.filePath);
+        content = resolveLinks(content, markdownFile.links, linkMap, headingMap, markdownFile.filePath);
         content = resolveAssets(content, markdownFile.assets, assetFiles);
 
         markdownFile.content = content;
+
+        if (markdownFile.splitPages) {
+            for (const splitPage of markdownFile.splitPages) {
+                splitPage.content = resolveLinks(
+                    splitPage.content,
+                    markdownFile.links,
+                    linkMap,
+                    headingMap,
+                    markdownFile.filePath
+                );
+                splitPage.content = resolveAssets(splitPage.content, markdownFile.assets, assetFiles);
+            }
+        }
     }
 
     return markdownFiles;
@@ -38,6 +52,35 @@ function buildLinkMap(markdownFiles) {
     }
 
     return linkMap;
+}
+
+function buildHeadingMap(markdownFiles) {
+    const headingMap = new Map();
+
+    for (const markdownFile of markdownFiles) {
+        if (!markdownFile.splitPages) {
+            continue;
+        }
+
+        for (const splitPage of markdownFile.splitPages) {
+            if (!splitPage.headingTitle || !splitPage.foundryPageUuid) {
+                continue;
+            }
+
+            for (const lookupKey of markdownFile.lookupKeys) {
+                const headingKey = `${lookupKey.toLowerCase()}#${splitPage.headingTitle.toLowerCase()}`;
+                if (!headingMap.has(headingKey)) {
+                    headingMap.set(headingKey, []);
+                }
+                headingMap.get(headingKey).push({
+                    splitPage,
+                    markdownFile
+                });
+            }
+        }
+    }
+
+    return headingMap;
 }
 
 function buildAssetFiles(nonMarkdownFiles) {
@@ -160,7 +203,7 @@ function findBestAssetMatch(obsidian, nonMarkdownFiles) {
     return best.foundryDataPath;
 }
 
-function resolveLinks(content, links, linkMap, sourceFilePath) {
+function resolveLinks(content, links, linkMap, headingMap, sourceFilePath) {
     if (!Array.isArray(links) || links.length === 0) {
         return content;
     }
@@ -173,6 +216,21 @@ function resolveLinks(content, links, linkMap, sourceFilePath) {
         }
 
         const lowercaseTarget = link.obsidian.toLowerCase();
+
+        if (link.metadata?.heading) {
+            const headingKey = `${lowercaseTarget}#${link.metadata.heading.toLowerCase()}`;
+            const headingCandidates = headingMap.get(headingKey) || [];
+            const headingMatch = selectBestHeadingMatch(headingCandidates, sourceFilePath);
+
+            if (headingMatch) {
+                const displayText = link.label || link.obsidian;
+                const resolvedLink = `@UUID[${headingMatch.splitPage.foundryPageUuid}]{${displayText}}`;
+                link.foundry = headingMatch.splitPage.foundryPageUuid;
+                content = content.replaceAll(link.placeholder, resolvedLink);
+                continue;
+            }
+        }
+
         const candidates = linkMap.get(lowercaseTarget) || [];
         const targetFile = selectBestMatch(candidates, sourceFilePath);
 
@@ -188,6 +246,42 @@ function resolveLinks(content, links, linkMap, sourceFilePath) {
     }
 
     return content;
+}
+
+function selectBestHeadingMatch(candidates, sourceFilePath) {
+    if (candidates.length === 0) {
+        return null;
+    }
+    if (candidates.length === 1) {
+        return candidates[0];
+    }
+
+    const sourceFolderPath = extractFolderPath(sourceFilePath);
+
+    const sameFolder = candidates.filter(c =>
+        extractFolderPath(c.markdownFile.filePath) === sourceFolderPath
+    );
+    if (sameFolder.length > 0) {
+        return pickShortestHeadingPath(sameFolder);
+    }
+
+    const parentFolders = getParentFolders(sourceFolderPath);
+    for (const parentFolder of parentFolders) {
+        const inParent = candidates.filter(c =>
+            extractFolderPath(c.markdownFile.filePath) === parentFolder
+        );
+        if (inParent.length > 0) {
+            return pickShortestHeadingPath(inParent);
+        }
+    }
+
+    return pickShortestHeadingPath(candidates);
+}
+
+function pickShortestHeadingPath(candidates) {
+    return candidates.reduce((best, current) => {
+        return current.markdownFile.filePath.length < best.markdownFile.filePath.length ? current : best;
+    });
 }
 
 function resolveAssets(content, assets, assetFiles) {

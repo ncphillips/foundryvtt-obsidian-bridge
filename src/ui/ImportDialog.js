@@ -14,12 +14,16 @@ export default class ImportDialog extends HandlebarsApplicationMixin(Application
     constructor(options = {}) {
         super(options);
         const savedPrefs = loadDialogPreferences('import');
+        const combineNotes = savedPrefs.combineNotes ?? false;
+        const splitByHeadings = combineNotes ? false : (savedPrefs.splitByHeadings ?? false);
         this.importOptions = new ImportOptions({
             dataPath: savedPrefs.dataPath ?? `worlds/${game.world.id}/obsidian-assets`,
-            combineNotes: savedPrefs.combineNotes ?? false,
+            combineNotes,
             skipFolderCombine: savedPrefs.skipFolderCombine ?? false,
             importAssets: savedPrefs.importAssets ?? false,
-            strictLineBreaks: savedPrefs.strictLineBreaks ?? false
+            strictLineBreaks: savedPrefs.strictLineBreaks ?? false,
+            splitByHeadings,
+            splitHeadingLevel: savedPrefs.splitHeadingLevel ?? 1
         });
     }
 
@@ -63,6 +67,8 @@ export default class ImportDialog extends HandlebarsApplicationMixin(Application
             skipFolderCombine: this.importOptions.skipFolderCombine,
             importAssets: this.importOptions.importAssets,
             strictLineBreaks: this.importOptions.strictLineBreaks,
+            splitByHeadings: this.importOptions.splitByHeadings,
+            splitHeadingLevel: this.importOptions.splitHeadingLevel,
             dataPath: this.importOptions.dataPath
         };
     }
@@ -94,6 +100,9 @@ export default class ImportDialog extends HandlebarsApplicationMixin(Application
         if (combineNotesCheckbox) {
             combineNotesCheckbox.addEventListener('change', async event => {
                 this.importOptions.combineNotes = event.target.checked;
+                if (event.target.checked) {
+                    this.importOptions.splitByHeadings = false;
+                }
                 await this.render();
             });
         }
@@ -110,6 +119,25 @@ export default class ImportDialog extends HandlebarsApplicationMixin(Application
         if (strictLineBreaksCheckbox) {
             strictLineBreaksCheckbox.addEventListener('change', event => {
                 this.importOptions.strictLineBreaks = event.target.checked;
+            });
+        }
+
+        const splitByHeadingsCheckbox = this.element.querySelector('input[name="splitByHeadings"]');
+        if (splitByHeadingsCheckbox) {
+            splitByHeadingsCheckbox.addEventListener('change', async event => {
+                this.importOptions.splitByHeadings = event.target.checked;
+                if (event.target.checked) {
+                    this.importOptions.combineNotes = false;
+                }
+                await this.render();
+            });
+        }
+
+        const splitHeadingLevelSelect = this.element.querySelector('select[name="splitHeadingLevel"]');
+        if (splitHeadingLevelSelect) {
+            splitHeadingLevelSelect.value = String(this.importOptions.splitHeadingLevel);
+            splitHeadingLevelSelect.addEventListener('change', event => {
+                this.importOptions.splitHeadingLevel = parseInt(event.target.value, 10);
             });
         }
 
@@ -233,6 +261,8 @@ export default class ImportDialog extends HandlebarsApplicationMixin(Application
         this.importOptions.skipFolderCombine = data.skipFolderCombine || false;
         this.importOptions.importAssets = data.importAssets || false;
         this.importOptions.strictLineBreaks = data.strictLineBreaks || false;
+        this.importOptions.splitByHeadings = data.splitByHeadings || false;
+        this.importOptions.splitHeadingLevel = parseInt(data.splitHeadingLevel, 10) || 1;
         this.importOptions.dataPath = data.dataPath || '';
 
         if (!this.importOptions.isValid()) {
@@ -245,6 +275,8 @@ export default class ImportDialog extends HandlebarsApplicationMixin(Application
             skipFolderCombine: this.importOptions.skipFolderCombine,
             importAssets: this.importOptions.importAssets,
             strictLineBreaks: this.importOptions.strictLineBreaks,
+            splitByHeadings: this.importOptions.splitByHeadings,
+            splitHeadingLevel: this.importOptions.splitHeadingLevel,
             dataPath: this.importOptions.dataPath
         });
 

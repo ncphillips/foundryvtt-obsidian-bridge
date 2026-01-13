@@ -140,7 +140,7 @@ describe('journal/update', () => {
 
             const result = await updateContent([markdownFile]);
 
-            expect(consoleWarnSpy).toHaveBeenCalledWith('Skipping file without UUID: test.md');
+            expect(consoleWarnSpy).toHaveBeenCalledWith('Skipping page without UUID: test.md');
             expect(mockFromUuidSync).not.toHaveBeenCalled();
             expect(result.updatedPages).toHaveLength(0);
         });
@@ -201,7 +201,7 @@ describe('journal/update', () => {
 
             const result = await updateContent([markdownFileWithoutUuid, markdownFileWithUuid]);
 
-            expect(consoleWarnSpy).toHaveBeenCalledWith('Skipping file without UUID: no-uuid.md');
+            expect(consoleWarnSpy).toHaveBeenCalledWith('Skipping page without UUID: no-uuid.md');
             expect(mockPage.update).toHaveBeenCalled();
             expect(result.updatedPages).toHaveLength(1);
         });
