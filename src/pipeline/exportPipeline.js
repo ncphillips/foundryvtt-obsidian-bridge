@@ -23,6 +23,7 @@ import { extractCalloutsToPlaceholders, restoreCalloutPlaceholders } from '../ca
  * 7. prepend-frontmatter - Prepend stored frontmatter to markdown content
  * 8. identify-assets - Identify asset paths to export (conditional on exportAssets)
  * 9. write-vault - Write files to filesystem or ZIP
+ * 10. update-sync-timestamps - Update lastSyncedAt flag on exported pages
  *
  * @param {import('../domain/ExportOptions.js').default} exportOptions - Export configuration
  * @param {import('showdown').Converter} showdownConverter - Showdown converter instance
@@ -186,6 +187,39 @@ export default function createExportPipeline(exportOptions, showdownConverter) {
                 }
 
                 return result;
+            }
+        }),
+
+        new PhaseDefinition({
+            name: 'update-sync-timestamps',
+            execute: async ctx => {
+                const timestamp = Date.now();
+                let pagesUpdated = 0;
+
+                for (const markdownFile of ctx.markdownFiles) {
+                    const uuid = markdownFile.foundryPageUuid;
+                    if (!uuid) {
+                        continue;
+                    }
+
+                    const doc = fromUuidSync(uuid);
+                    if (!doc) {
+                        console.warn(`Could not find document for UUID: ${uuid}`);
+                        continue;
+                    }
+
+                    if (doc.documentName === 'JournalEntryPage') {
+                        await doc.update({ 'flags.obsidian-bridge.lastSyncedAt': timestamp });
+                        pagesUpdated++;
+                    } else if (doc.documentName === 'JournalEntry') {
+                        for (const page of doc.pages) {
+                            await page.update({ 'flags.obsidian-bridge.lastSyncedAt': timestamp });
+                            pagesUpdated++;
+                        }
+                    }
+                }
+
+                return { pagesUpdated };
             }
         })
     ];

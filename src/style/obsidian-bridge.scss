@@ -4,6 +4,7 @@
 @use "export";
 @use "progress";
 @use "callout";
+@use "conflict";
 
 .directory .directory-footer .action-buttons {
     gap: 8px;

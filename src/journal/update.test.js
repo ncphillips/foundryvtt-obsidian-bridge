@@ -38,7 +38,8 @@ describe('journal/update', () => {
             expect(mockFromUuidSync).toHaveBeenCalledWith(mockPage.uuid);
             expect(mockPage.update).toHaveBeenCalledWith({
                 'text.content': '<p>New content</p>',
-                'flags.obsidian-bridge.frontmatter': null
+                'flags.obsidian-bridge.frontmatter': null,
+                'flags.obsidian-bridge.lastSyncedAt': expect.any(Number)
             });
 
             expect(result.updatedPages).toHaveLength(1);
@@ -79,11 +80,13 @@ describe('journal/update', () => {
 
             expect(mockPage1.update).toHaveBeenCalledWith({
                 'text.content': '<p>New 1</p>',
-                'flags.obsidian-bridge.frontmatter': null
+                'flags.obsidian-bridge.frontmatter': null,
+                'flags.obsidian-bridge.lastSyncedAt': expect.any(Number)
             });
             expect(mockPage2.update).toHaveBeenCalledWith({
                 'text.content': '<p>New 2</p>',
-                'flags.obsidian-bridge.frontmatter': null
+                'flags.obsidian-bridge.frontmatter': null,
+                'flags.obsidian-bridge.lastSyncedAt': expect.any(Number)
             });
 
             expect(result.updatedPages).toHaveLength(2);
@@ -224,7 +227,8 @@ describe('journal/update', () => {
 
             expect(mockPage.update).toHaveBeenCalledWith({
                 'text.content': '<p>New content</p>',
-                'flags.obsidian-bridge.frontmatter': 'title: Hello'
+                'flags.obsidian-bridge.frontmatter': 'title: Hello',
+                'flags.obsidian-bridge.lastSyncedAt': expect.any(Number)
             });
         });
 
@@ -249,7 +253,8 @@ describe('journal/update', () => {
 
             expect(mockPage.update).toHaveBeenCalledWith({
                 'text.content': '<p>New content</p>',
-                'flags.obsidian-bridge.frontmatter': null
+                'flags.obsidian-bridge.frontmatter': null,
+                'flags.obsidian-bridge.lastSyncedAt': expect.any(Number)
             });
         });
 
@@ -318,19 +323,21 @@ describe('journal/update', () => {
             };
 
             const updatedPages = [
-                { page: mockPage1, originalContent: '<p>Original 1</p>', originalFrontmatter: null },
-                { page: mockPage2, originalContent: '<p>Original 2</p>', originalFrontmatter: null }
+                { page: mockPage1, originalContent: '<p>Original 1</p>', originalFrontmatter: null, originalLastSyncedAt: 1000 },
+                { page: mockPage2, originalContent: '<p>Original 2</p>', originalFrontmatter: null, originalLastSyncedAt: 2000 }
             ];
 
             await rollbackUpdates(updatedPages);
 
             expect(mockPage2.update).toHaveBeenCalledWith({
                 'text.content': '<p>Original 2</p>',
-                'flags.obsidian-bridge.frontmatter': null
+                'flags.obsidian-bridge.frontmatter': null,
+                'flags.obsidian-bridge.lastSyncedAt': 2000
             });
             expect(mockPage1.update).toHaveBeenCalledWith({
                 'text.content': '<p>Original 1</p>',
-                'flags.obsidian-bridge.frontmatter': null
+                'flags.obsidian-bridge.frontmatter': null,
+                'flags.obsidian-bridge.lastSyncedAt': 1000
             });
             expect(updateOrder).toEqual(['page2', 'page1']);
         });
@@ -347,8 +354,8 @@ describe('journal/update', () => {
             };
 
             const updatedPages = [
-                { page: mockPage1, originalContent: '<p>Original 1</p>', originalFrontmatter: null },
-                { page: mockPage2, originalContent: '<p>Original 2</p>', originalFrontmatter: null }
+                { page: mockPage1, originalContent: '<p>Original 1</p>', originalFrontmatter: null, originalLastSyncedAt: null },
+                { page: mockPage2, originalContent: '<p>Original 2</p>', originalFrontmatter: null, originalLastSyncedAt: null }
             ];
 
             const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
@@ -381,7 +388,7 @@ describe('journal/update', () => {
             };
 
             const updatedPages = [
-                { page: mockPage, originalContent: '<p>Original</p>', originalFrontmatter: null }
+                { page: mockPage, originalContent: '<p>Original</p>', originalFrontmatter: null, originalLastSyncedAt: null }
             ];
 
             const originalLength = updatedPages.length;
@@ -402,7 +409,8 @@ describe('journal/update', () => {
                 {
                     page: mockPage,
                     originalContent: '<p>Original</p>',
-                    originalFrontmatter: 'title: Original'
+                    originalFrontmatter: 'title: Original',
+                    originalLastSyncedAt: 12345
                 }
             ];
 
@@ -410,7 +418,8 @@ describe('journal/update', () => {
 
             expect(mockPage.update).toHaveBeenCalledWith({
                 'text.content': '<p>Original</p>',
-                'flags.obsidian-bridge.frontmatter': 'title: Original'
+                'flags.obsidian-bridge.frontmatter': 'title: Original',
+                'flags.obsidian-bridge.lastSyncedAt': 12345
             });
         });
 
@@ -424,7 +433,8 @@ describe('journal/update', () => {
                 {
                     page: mockPage,
                     originalContent: '<p>Original</p>',
-                    originalFrontmatter: null
+                    originalFrontmatter: null,
+                    originalLastSyncedAt: null
                 }
             ];
 
@@ -432,7 +442,8 @@ describe('journal/update', () => {
 
             expect(mockPage.update).toHaveBeenCalledWith({
                 'text.content': '<p>Original</p>',
-                'flags.obsidian-bridge.frontmatter': null
+                'flags.obsidian-bridge.frontmatter': null,
+                'flags.obsidian-bridge.lastSyncedAt': null
             });
         });
     });

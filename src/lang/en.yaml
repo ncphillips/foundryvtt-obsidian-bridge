@@ -57,6 +57,16 @@ obsidian-bridge:
     no-directory-selected: Please select a directory for export
     no-journals-selected: Please select at least one journal to export
 
+  conflicts:
+    dialog-title: Sync Conflicts Detected
+    warning-message: "{count} page(s) have been modified in Foundry since the last sync."
+    instructions: "Checked pages will be overwritten with content from Obsidian. Uncheck pages you want to keep."
+    column-page: Page
+    column-journal: Journal
+    column-modified: Last Modified
+    continue-button: Continue Import
+    abort-button: Abort
+
   progress:
     title: Processing...
     starting: Starting...
@@ -69,10 +79,12 @@ obsidian-bridge:
     replace-references: Replacing references
     convert-markdown: Converting markdown to HTML
     plan-structure: Planning journal structure
+    detect-conflicts: Checking for conflicts
     create-documents: Creating journal documents
     upload-assets: Uploading assets
     resolve-placeholders: Resolving references
     update-content: Updating content
+    update-sync-timestamps: Updating sync timestamps
 
     collect-journals: Collecting journals
     convert-to-markdown: Converting HTML to markdown

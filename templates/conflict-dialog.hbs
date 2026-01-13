@@ -1,0 +1,44 @@
+<div class="conflict-dialog-content">
+    <p class="conflict-warning">
+        <i class="fas fa-exclamation-triangle"></i>
+        {{localize "obsidian-bridge.conflicts.warning-message" count=conflictCount}}
+    </p>
+
+    <p class="conflict-instructions">
+        {{localize "obsidian-bridge.conflicts.instructions"}}
+    </p>
+
+    <div class="conflict-list">
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-checkbox"></th>
+                    <th class="col-page">{{localize "obsidian-bridge.conflicts.column-page"}}</th>
+                    <th class="col-journal">{{localize "obsidian-bridge.conflicts.column-journal"}}</th>
+                    <th class="col-modified">{{localize "obsidian-bridge.conflicts.column-modified"}}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each conflicts}}
+                <tr>
+                    <td class="col-checkbox">
+                        <input type="checkbox" data-uuid="{{pageUuid}}" {{checked checked}} />
+                    </td>
+                    <td class="col-page">{{pageName}}</td>
+                    <td class="col-journal">{{entryName}}</td>
+                    <td class="col-modified">{{formattedModifiedTime}}</td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
+
+    <footer class="form-footer flexrow">
+        <button type="button" data-action="continue" class="primary">
+            <i class="fas fa-check"></i> {{localize "obsidian-bridge.conflicts.continue-button"}}
+        </button>
+        <button type="button" data-action="abort">
+            <i class="fas fa-times"></i> {{localize "obsidian-bridge.conflicts.abort-button"}}
+        </button>
+    </footer>
+</div>

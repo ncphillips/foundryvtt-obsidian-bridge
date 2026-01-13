@@ -14,6 +14,8 @@ import { extractFrontmatter } from '../content/frontmatter.js';
 import convertNewlinesToBr from '../content/markdownPreprocess.js';
 import { extractCallouts } from '../callout/extract.js';
 import { replaceCalloutPlaceholders } from '../callout/replace.js';
+import { detectConflicts, filterSkippedFiles } from '../conflict/detectConflicts.js';
+import ConflictDialog from '../ui/ConflictDialog.js';
 
 /**
  * Creates a configured pipeline for importing an Obsidian vault into Foundry.
@@ -29,10 +31,11 @@ import { replaceCalloutPlaceholders } from '../callout/replace.js';
  * 8. Replace references - Replace references with placeholders
  * 9. Convert markdown - Convert markdown text to HTML
  * 10. Plan structure - Determine folder and journal entry structure
- * 11. Create documents - Create Foundry folders, journal entries, and pages
- * 12. Upload assets - Upload non-markdown files to data path (conditional)
- * 13. Resolve placeholders - Replace placeholders with actual UUIDs and paths
- * 14. Update content - Write final HTML content to journal pages
+ * 11. Detect conflicts - Check for pages modified since last sync, prompt user
+ * 12. Create documents - Create Foundry folders, journal entries, and pages
+ * 13. Upload assets - Upload non-markdown files to data path (conditional)
+ * 14. Resolve placeholders - Replace placeholders with actual UUIDs and paths
+ * 15. Update content - Write final HTML content to journal pages
  *
  * @param {import('../domain/ImportOptions').default} importOptions - Import configuration
  * @param {import('showdown').Converter} showdownConverter - Markdown to HTML converter
@@ -192,6 +195,22 @@ export default function createImportPipeline(importOptions, showdownConverter) {
                 const structurePlan = planJournalStructure(ctx.markdownFiles, ctx.importOptions);
                 ctx.structurePlan = structurePlan;
                 return { structurePlan };
+            },
+        }),
+
+        new PhaseDefinition({
+            name: 'detect-conflicts',
+            execute: async ctx => {
+                const conflicts = await detectConflicts(ctx.structurePlan);
+
+                if (conflicts.length === 0) {
+                    return { conflicts: [], skipped: [] };
+                }
+
+                const skipped = await ConflictDialog.prompt(conflicts);
+                filterSkippedFiles(ctx.markdownFiles, skipped);
+
+                return { conflicts, skipped };
             },
         }),
 
