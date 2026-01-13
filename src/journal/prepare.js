@@ -1,3 +1,4 @@
+import { id as MODULE_ID } from '../../module.json';
 import MarkdownFile from '../domain/MarkdownFile.js';
 import generateLookupKeys from '../reference/keys.js';
 import { mergeFrontmatter } from '../content/frontmatter.js';
@@ -42,7 +43,7 @@ function createMergedFile(journal, pages) {
     const lookupKeys = generateLookupKeys(filePath);
 
     const frontmatterStrings = pages.map(
-        page => page.flags?.['obsidian-bridge']?.frontmatter ?? null
+        page => page.flags?.[MODULE_ID]?.frontmatter ?? null
     );
     const { merged, warnings } = mergeFrontmatter(frontmatterStrings);
 
@@ -66,7 +67,7 @@ function createPageFile(journal, page) {
     const htmlContent = page.text?.content || '';
     const filePath = buildFilePath(journal.folder, journal.name, page.name);
     const lookupKeys = generateLookupKeys(filePath);
-    const frontmatter = page.flags?.['obsidian-bridge']?.frontmatter ?? null;
+    const frontmatter = page.flags?.[MODULE_ID]?.frontmatter ?? null;
 
     return new MarkdownFile({
         filePath,

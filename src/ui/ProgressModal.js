@@ -1,3 +1,5 @@
+import { id as MODULE_ID } from '../../module.json';
+
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 export default class ProgressModal extends HandlebarsApplicationMixin(ApplicationV2) {
@@ -5,7 +7,7 @@ export default class ProgressModal extends HandlebarsApplicationMixin(Applicatio
         super(options);
         this.progressState = {
             currentPhase: 0,
-            phaseLabel: 'obsidian-bridge.progress.starting',
+            phaseLabel: `${MODULE_ID}.progress.starting`,
             completedPhases: 0,
             totalPhases: 0,
             percentage: 0
@@ -13,12 +15,12 @@ export default class ProgressModal extends HandlebarsApplicationMixin(Applicatio
     }
 
     static DEFAULT_OPTIONS = {
-        id: 'obsidian-bridge-progress',
-        classes: ['obsidian-bridge', 'progress-modal'],
+        id: `${MODULE_ID}-progress`,
+        classes: [MODULE_ID, 'progress-modal'],
         window: {
             frame: true,
             positioned: true,
-            title: 'obsidian-bridge.progress.title',
+            title: `${MODULE_ID}.progress.title`,
             icon: 'fas fa-spinner',
             minimizable: false,
             resizable: false,
@@ -32,7 +34,7 @@ export default class ProgressModal extends HandlebarsApplicationMixin(Applicatio
 
     static PARTS = {
         content: {
-            template: 'modules/obsidian-bridge/templates/progress-modal.hbs'
+            template: `modules/${MODULE_ID}/templates/progress-modal.hbs`
         }
     };
 

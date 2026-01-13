@@ -1,3 +1,5 @@
+import { id as MODULE_ID } from '../../module.json';
+
 /**
  * Dialog for resolving sync conflicts during import.
  *
@@ -24,13 +26,13 @@ export default class ConflictDialog extends HandlebarsApplicationMixin(Applicati
     }
 
     static DEFAULT_OPTIONS = {
-        id: 'obsidian-bridge-conflicts',
-        classes: ['obsidian-bridge', 'conflict-dialog'],
+        id: `${MODULE_ID}-conflicts`,
+        classes: [MODULE_ID, 'conflict-dialog'],
         tag: 'form',
         window: {
             frame: true,
             positioned: true,
-            title: 'obsidian-bridge.conflicts.dialog-title',
+            title: `${MODULE_ID}.conflicts.dialog-title`,
             icon: 'fas fa-exclamation-triangle',
             minimizable: false,
             resizable: false
@@ -47,7 +49,7 @@ export default class ConflictDialog extends HandlebarsApplicationMixin(Applicati
 
     static PARTS = {
         form: {
-            template: 'modules/obsidian-bridge/templates/conflict-dialog.hbs'
+            template: `modules/${MODULE_ID}/templates/conflict-dialog.hbs`
         }
     };
 

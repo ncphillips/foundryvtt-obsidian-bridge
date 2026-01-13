@@ -1,3 +1,4 @@
+import { id as MODULE_ID } from '../../module.json';
 import ExportOptions from '../domain/ExportOptions.js';
 import { buildJournalTree } from '../tree/build.js';
 import { annotateJournalTreeForDisplay } from '../tree/annotate.js';
@@ -25,13 +26,13 @@ export default class ExportDialog extends HandlebarsApplicationMixin(Application
     }
 
     static DEFAULT_OPTIONS = {
-        id: 'obsidian-bridge-export',
-        classes: ['obsidian-bridge', 'export-dialog'],
+        id: `${MODULE_ID}-export`,
+        classes: [MODULE_ID, 'export-dialog'],
         tag: 'form',
         window: {
             frame: true,
             positioned: true,
-            title: 'obsidian-bridge.export.dialog-title',
+            title: `${MODULE_ID}.export.dialog-title`,
             icon: 'fas fa-file-export',
             minimizable: false,
             resizable: false
@@ -52,7 +53,7 @@ export default class ExportDialog extends HandlebarsApplicationMixin(Application
 
     static PARTS = {
         form: {
-            template: 'modules/obsidian-bridge/templates/export-dialog.hbs'
+            template: `modules/${MODULE_ID}/templates/export-dialog.hbs`
         }
     };
 
@@ -207,14 +208,14 @@ export default class ExportDialog extends HandlebarsApplicationMixin(Application
         this.assetPathPrefix = data.assetPathPrefix || '';
 
         if (this.hasFilesystemAccess && !this.directoryHandle) {
-            ui.notifications.warn(game.i18n.localize('obsidian-bridge.export.no-directory-selected'));
+            ui.notifications.warn(game.i18n.localize(`${MODULE_ID}.export.no-directory-selected`));
             return;
         }
 
         const journals = collectSelectedJournals(this.journalTree);
 
         if (journals.length === 0) {
-            ui.notifications.warn(game.i18n.localize('obsidian-bridge.export.no-journals-selected'));
+            ui.notifications.warn(game.i18n.localize(`${MODULE_ID}.export.no-journals-selected`));
             return;
         }
 

@@ -1,3 +1,5 @@
+import { id as MODULE_ID } from '../../module.json';
+
 /**
  * Detect pages that have been modified in Foundry since last sync.
  *
@@ -112,7 +114,7 @@ const SYNC_TOLERANCE_MS = 5000;
  * @returns {Conflict|null} Conflict info or null if no conflict
  */
 function checkPageConflict(page, entry, pagePlan) {
-    const lastSyncedAt = page.flags?.['obsidian-bridge']?.lastSyncedAt;
+    const lastSyncedAt = page.flags?.[MODULE_ID]?.lastSyncedAt;
     if (lastSyncedAt == null) {
         return null;
     }

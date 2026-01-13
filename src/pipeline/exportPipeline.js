@@ -1,3 +1,4 @@
+import { id as MODULE_ID } from '../../module.json';
 import PipelineConfig from '../domain/PipelineConfig.js';
 import PhaseDefinition from '../domain/PhaseDefinition.js';
 import prepareJournalsForExport from '../journal/prepare.js';
@@ -209,11 +210,11 @@ export default function createExportPipeline(exportOptions, showdownConverter) {
                     }
 
                     if (doc.documentName === 'JournalEntryPage') {
-                        await doc.update({ 'flags.obsidian-bridge.lastSyncedAt': timestamp });
+                        await doc.update({ [`flags.${MODULE_ID}.lastSyncedAt`]: timestamp });
                         pagesUpdated++;
                     } else if (doc.documentName === 'JournalEntry') {
                         for (const page of doc.pages) {
-                            await page.update({ 'flags.obsidian-bridge.lastSyncedAt': timestamp });
+                            await page.update({ [`flags.${MODULE_ID}.lastSyncedAt`]: timestamp });
                             pagesUpdated++;
                         }
                     }

@@ -1,3 +1,4 @@
+import { id as MODULE_ID } from '../../module.json';
 import ImportOptions from '../domain/ImportOptions';
 import { buildFileTree } from '../tree/build';
 import { annotateTreeForDisplay } from '../tree/annotate';
@@ -28,13 +29,13 @@ export default class ImportDialog extends HandlebarsApplicationMixin(Application
     }
 
     static DEFAULT_OPTIONS = {
-        id: 'obsidian-bridge-import',
-        classes: ['obsidian-bridge', 'import-dialog'],
+        id: `${MODULE_ID}-import`,
+        classes: [MODULE_ID, 'import-dialog'],
         tag: 'form',
         window: {
             frame: true,
             positioned: true,
-            title: 'obsidian-bridge.import.dialog-title',
+            title: `${MODULE_ID}.import.dialog-title`,
             icon: 'fas fa-file-import',
             minimizable: false,
             resizable: false
@@ -55,7 +56,7 @@ export default class ImportDialog extends HandlebarsApplicationMixin(Application
 
     static PARTS = {
         form: {
-            template: 'modules/obsidian-bridge/templates/import-dialog.hbs'
+            template: `modules/${MODULE_ID}/templates/import-dialog.hbs`
         }
     };
 
@@ -266,7 +267,7 @@ export default class ImportDialog extends HandlebarsApplicationMixin(Application
         this.importOptions.dataPath = data.dataPath || '';
 
         if (!this.importOptions.isValid()) {
-            ui.notifications.warn(game.i18n.localize('obsidian-bridge.import.vault-path-hint'));
+            ui.notifications.warn(game.i18n.localize(`${MODULE_ID}.import.vault-path-hint`));
             return;
         }
 

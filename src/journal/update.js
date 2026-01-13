@@ -1,3 +1,5 @@
+import { id as MODULE_ID } from '../../module.json';
+
 /**
  * Update journal page content in Foundry
  *
@@ -55,13 +57,13 @@ async function updateSinglePage(uuid, content, frontmatter, filePath) {
     }
 
     const originalContent = page.text?.content || '';
-    const originalFrontmatter = page.flags?.['obsidian-bridge']?.frontmatter ?? null;
-    const originalLastSyncedAt = page.flags?.['obsidian-bridge']?.lastSyncedAt ?? null;
+    const originalFrontmatter = page.flags?.[MODULE_ID]?.frontmatter ?? null;
+    const originalLastSyncedAt = page.flags?.[MODULE_ID]?.lastSyncedAt ?? null;
 
     await page.update({
         'text.content': content,
-        'flags.obsidian-bridge.frontmatter': frontmatter,
-        'flags.obsidian-bridge.lastSyncedAt': Date.now()
+        [`flags.${MODULE_ID}.frontmatter`]: frontmatter,
+        [`flags.${MODULE_ID}.lastSyncedAt`]: Date.now()
     });
 
     return {
@@ -83,8 +85,8 @@ export async function rollbackUpdates(updatedPages) {
         try {
             await page.update({
                 'text.content': originalContent,
-                'flags.obsidian-bridge.frontmatter': originalFrontmatter,
-                'flags.obsidian-bridge.lastSyncedAt': originalLastSyncedAt
+                [`flags.${MODULE_ID}.frontmatter`]: originalFrontmatter,
+                [`flags.${MODULE_ID}.lastSyncedAt`]: originalLastSyncedAt
             });
         } catch (error) {
             console.error(`Failed to rollback page ${page.uuid}:`, error);

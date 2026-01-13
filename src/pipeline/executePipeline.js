@@ -1,3 +1,4 @@
+import { id as MODULE_ID } from '../../module.json';
 import PipelineResult from '../domain/PipelineResult';
 
 /**
@@ -32,7 +33,7 @@ export default async function executePipeline(config) {
             if (config.onProgress) {
                 config.onProgress({
                     currentPhase: i,
-                    phaseLabel: `obsidian-bridge.progress.${phase.name}`,
+                    phaseLabel: `${MODULE_ID}.progress.${phase.name}`,
                     completedPhases: i,
                     totalPhases,
                     percentage: Math.round((i / totalPhases) * 100)
@@ -47,7 +48,7 @@ export default async function executePipeline(config) {
         if (config.onProgress) {
             config.onProgress({
                 currentPhase: totalPhases,
-                phaseLabel: 'obsidian-bridge.progress.complete',
+                phaseLabel: `${MODULE_ID}.progress.complete`,
                 completedPhases: totalPhases,
                 totalPhases,
                 percentage: 100

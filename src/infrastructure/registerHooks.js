@@ -1,3 +1,4 @@
+import { id as MODULE_ID } from '../../module.json';
 import ImportDialog from '../ui/ImportDialog.js';
 import ExportDialog from '../ui/ExportDialog.js';
 import { registerHandlebarsHelpers } from './registerHandlebarsHelpers.js';
@@ -19,7 +20,7 @@ async function onRenderJournalDirectory(app, htmlOrElement, data) {
     const container = document.createElement('div');
     container.className = 'header-actions action-buttons flexrow';
 
-    const importTemplatePath = 'modules/obsidian-bridge/templates/import-button.hbs';
+    const importTemplatePath = `modules/${MODULE_ID}/templates/import-button.hbs`;
     const importTemplate = await getTemplate(importTemplatePath);
     const importButtonHtml = importTemplate({});
 
@@ -38,7 +39,7 @@ async function onRenderJournalDirectory(app, htmlOrElement, data) {
 
     container.appendChild(importButton);
 
-    const exportTemplatePath = 'modules/obsidian-bridge/templates/export-button.hbs';
+    const exportTemplatePath = `modules/${MODULE_ID}/templates/export-button.hbs`;
     const exportTemplate = await getTemplate(exportTemplatePath);
     const exportButtonHtml = exportTemplate({});
 
