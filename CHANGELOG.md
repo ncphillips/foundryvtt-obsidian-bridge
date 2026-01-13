@@ -2,6 +2,11 @@
 
 ## [Unreleased](https://github.com/SoSly/foundryvtt-obsidian-bridge)
 
+### Added
+- Long markdown files can now be split into multiple journal pages based on headings
+- Import and export dialog options are now remembered between sessions
+- Sync conflict detection warns you before overwriting changes made in Foundry
+
 ## [1.1.0](https://github.com/SoSly/foundryvtt-obsidian-bridge/releases/tag/v1.1.0) - 2026-01-01
 
 ### Added
