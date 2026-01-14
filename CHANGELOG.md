@@ -1,6 +1,6 @@
 # Obsidian Bridge
 
-## [Unreleased](https://github.com/SoSly/foundryvtt-obsidian-bridge)
+## [1.2.0](https://github.com/SoSly/foundryvtt-obsidian-bridge/releases/tag/1.2.0) - 2026-01-13
 
 ### Added
 - Long markdown files can now be split into multiple journal pages based on headings
