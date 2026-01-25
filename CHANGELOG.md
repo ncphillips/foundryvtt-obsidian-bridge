@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Import Fantasy Statblocks from Obsidian as dnd5e NPC actors (requires dnd5e 5.1+)
+- Destination folder selector lets you import into an existing journal folder instead of root
 
 ## [1.2.0](https://github.com/SoSly/foundryvtt-obsidian-bridge/releases/tag/1.2.0) - 2026-01-13
 
