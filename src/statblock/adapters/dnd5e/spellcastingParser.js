@@ -231,20 +231,16 @@ export function parseSpellcastingTrait(trait) {
 
     const desc = trait.desc;
 
-    // Parse header info from description
     const header = parseSpellcastingHeader(desc);
     result.level = header.level;
     result.ability = header.ability;
     result.saveDC = header.saveDC;
     result.attackBonus = header.attackBonus;
 
-    // Parse spell lists from description
-    // Split by common delimiters: newlines, periods followed by "At Will" or "X/Day"
     const sections = desc.split(/(?=[*_]*(?:At[- ]?Will|[\d]+\/Day)[*_]*:)/i);
 
     for (const section of sections) {
         if (/_[^_]+_/.test(section) || /\*\*[^*]+\*\*/.test(section)) {
-            // Handle both _spell_ and **spell** formats
             const spells = parseSpellListLine(section.replace(/\*\*/g, '_'));
             result.spells.push(...spells);
         }

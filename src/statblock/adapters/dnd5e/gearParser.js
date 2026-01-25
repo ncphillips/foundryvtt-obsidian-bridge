@@ -28,7 +28,6 @@ export function parseGearDescription(desc) {
     const parts = desc.split(',').map(p => p.trim()).filter(p => p.length > 0);
 
     for (const part of parts) {
-        // Check for quantity in parentheses: "Javelin (3)"
         const quantityMatch = part.match(/^(.+?)\s*\((\d+)\)$/);
 
         if (quantityMatch) {
@@ -88,6 +87,5 @@ export function normalizeItemName(name) {
     return name
         .toLowerCase()
         .trim()
-        // Remove "of" articles for simplicity in matching
         .replace(/\s+/g, ' ');
 }

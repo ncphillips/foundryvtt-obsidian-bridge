@@ -19,7 +19,6 @@ export function extractStatblocks(content) {
     const results = [];
     let match;
 
-    // Reset regex lastIndex in case it was used before
     STATBLOCK_REGEX.lastIndex = 0;
 
     while ((match = STATBLOCK_REGEX.exec(content)) !== null) {
@@ -44,7 +43,6 @@ export function hasStatblocks(content) {
         return false;
     }
 
-    // Reset regex lastIndex and test
     STATBLOCK_REGEX.lastIndex = 0;
     return STATBLOCK_REGEX.test(content);
 }

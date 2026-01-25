@@ -84,7 +84,6 @@ function normalizeSaves(saves) {
     for (const save of saves) {
         for (const [key, value] of Object.entries(save)) {
             const ability = key.toLowerCase();
-            // Handle both "+4" and 4 formats
             const bonus = typeof value === 'string'
                 ? parseInt(value.replace(/^\+/, ''), 10)
                 : value;
@@ -110,7 +109,6 @@ function normalizeSkillsaves(skillsaves) {
     for (const skill of skillsaves) {
         for (const [key, value] of Object.entries(skill)) {
             const skillName = key.toLowerCase();
-            // Handle both "+6" and 6 formats
             const bonus = typeof value === 'string'
                 ? parseInt(value.replace(/^\+/, ''), 10)
                 : value;
@@ -165,7 +163,6 @@ function normalizeCR(cr) {
     }
     const crStr = String(cr).trim();
 
-    // Handle fractions
     const fractionMatch = crStr.match(/^(\d+)\/(\d+)$/);
     if (fractionMatch) {
         return parseInt(fractionMatch[1], 10) / parseInt(fractionMatch[2], 10);

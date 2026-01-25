@@ -767,21 +767,18 @@ function buildTargetData(targetData) {
 function createSpellFromCompendium(compendiumSpell, spellEntry, spellcastingInfo, filePath) {
     const spellData = compendiumSpell.toObject();
 
-    // Set our tracking flags
     spellData.flags = spellData.flags || {};
     spellData.flags[MODULE_ID] = {
         fromStatblock: true,
         sourceFile: filePath
     };
 
-    // Set preparation method based on usage
     if (spellEntry.usage === 'atwill') {
         spellData.system.method = 'atwill';
         spellData.system.prepared = 1;
     } else if (spellEntry.uses) {
         spellData.system.method = 'innate';
         spellData.system.prepared = 1;
-        // Set uses
         spellData.system.uses = {
             value: spellEntry.uses,
             max: spellEntry.uses,
@@ -790,7 +787,6 @@ function createSpellFromCompendium(compendiumSpell, spellEntry, spellcastingInfo
         };
     }
 
-    // Set spellcasting ability if known
     if (spellcastingInfo.ability) {
         spellData.system.ability = spellcastingInfo.ability;
     }
@@ -827,8 +823,8 @@ function createBasicSpell(spellEntry, spellcastingInfo, filePath) {
             description: {
                 value: spellEntry.note ? `<p>${spellEntry.note}</p>` : ''
             },
-            level: 0, // Unknown level
-            school: 'evoc', // Default school
+            level: 0,
+            school: 'evoc',
             ability: spellcastingInfo.ability || '',
             method: spellEntry.usage === 'atwill' ? 'atwill' : 'innate',
             prepared: 1,
@@ -854,12 +850,10 @@ function createEquipmentFromCompendium(compendiumItem, quantity, filePath) {
         sourceFile: filePath
     };
 
-    // Set quantity if applicable
     if (itemData.system.quantity !== undefined) {
         itemData.system.quantity = quantity;
     }
 
-    // Equip the item
     if (itemData.system.equipped !== undefined) {
         itemData.system.equipped = true;
     }
@@ -954,15 +948,12 @@ export async function createEmbeddedItemsAsync(statblock) {
     const items = [];
     const filePath = statblock.filePath;
 
-    // Parse spellcasting from the spells array
     let spellcastingInfo = parseSpellcasting(statblock.spells);
 
-    // Also check for spellcasting traits (fallback for older format)
     for (const trait of statblock.traits || []) {
         if (isSpellcastingTrait(trait)) {
             const traitSpellcasting = parseSpellcastingTrait(trait);
             if (traitSpellcasting) {
-                // Merge info
                 spellcastingInfo.level = spellcastingInfo.level ?? traitSpellcasting.level;
                 spellcastingInfo.ability = spellcastingInfo.ability ?? traitSpellcasting.ability;
                 spellcastingInfo.saveDC = spellcastingInfo.saveDC ?? traitSpellcasting.saveDC;
@@ -973,15 +964,12 @@ export async function createEmbeddedItemsAsync(statblock) {
         }
     }
 
-    // Parse gear from traits
     const gearItems = extractGearFromTraits(statblock.traits);
 
-    // Collect all names for batch lookup
     const spellNames = spellcastingInfo.spells.map(s => s.name);
     const gearNames = gearItems.map(g => normalizeItemName(g.name));
     const actionWeaponNames = [];
 
-    // Identify potential weapon actions for compendium lookup
     for (const action of statblock.actions || []) {
         const attackData = parseAttackAction(action.desc);
         if (attackData.isAttack && !isMultiattack(action)) {
@@ -989,13 +977,11 @@ export async function createEmbeddedItemsAsync(statblock) {
         }
     }
 
-    // Batch lookup compendium items
     const [spellsMap, itemsMap] = await Promise.all([
         findSpells(spellNames),
         findItems([...gearNames, ...actionWeaponNames])
     ]);
 
-    // Process traits (skip Gear and Spellcasting)
     for (const trait of statblock.traits || []) {
         if (isGearTrait(trait) || isSpellcastingTrait(trait) || isLegendaryResistanceTrait(trait)) {
             continue;
@@ -1003,11 +989,9 @@ export async function createEmbeddedItemsAsync(statblock) {
         items.push(createFeatItem(trait, null, filePath));
     }
 
-    // Process actions
     for (const action of statblock.actions || []) {
         const attackData = parseAttackAction(action.desc);
         if (attackData.isAttack && !isMultiattack(action)) {
-            // Check if we found this weapon in compendium
             const weaponName = extractWeaponName(action.name).toLowerCase();
             const compendiumWeapon = itemsMap.get(weaponName);
 
@@ -1021,25 +1005,21 @@ export async function createEmbeddedItemsAsync(statblock) {
         }
     }
 
-    // Process bonus actions
     for (const action of statblock.bonusActions || []) {
         const attackData = parseAttackAction(action.desc);
         items.push(createFeatItem(action, 'bonus', filePath, attackData.isAttack ? attackData : null));
     }
 
-    // Process reactions
     for (const action of statblock.reactions || []) {
         const attackData = parseAttackAction(action.desc);
         items.push(createFeatItem(action, 'reaction', filePath, attackData.isAttack ? attackData : null));
     }
 
-    // Process legendary actions
     for (const action of statblock.legendaryActions || []) {
         const attackData = parseAttackAction(action.desc);
         items.push(createFeatItem(action, 'legendary', filePath, attackData.isAttack ? attackData : null));
     }
 
-    // Add spells
     for (const spellEntry of spellcastingInfo.spells) {
         const compendiumSpell = spellsMap.get(spellEntry.name);
         if (compendiumSpell) {
@@ -1051,7 +1031,6 @@ export async function createEmbeddedItemsAsync(statblock) {
         }
     }
 
-    // Add gear
     for (const gear of gearItems) {
         const normalizedName = normalizeItemName(gear.name);
         const compendiumItem = itemsMap.get(normalizedName);
