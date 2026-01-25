@@ -101,7 +101,6 @@ function parseSpellcastingHeader(line) {
 function parseSpellListLine(line) {
     const spells = [];
 
-    // Determine usage type and count
     let usage = 'innate';
     let uses = null;
 

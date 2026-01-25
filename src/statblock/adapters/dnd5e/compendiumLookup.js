@@ -63,11 +63,9 @@ export async function findItem(name) {
 
     const lowerName = name.toLowerCase().trim();
 
-    // Try dnd5e.items first (SRD items)
     const itemsIndex = await getCompendiumIndex('dnd5e.items');
     let entry = itemsIndex.get(lowerName);
 
-    // Try dnd5e.equipment if not found
     if (!entry) {
         const equipIndex = await getCompendiumIndex('dnd5e.equipment');
         entry = equipIndex.get(lowerName);
@@ -77,7 +75,6 @@ export async function findItem(name) {
         return null;
     }
 
-    // Load full document
     const pack = game.packs.get(entry.packId);
     if (!pack) {
         return null;
@@ -99,7 +96,6 @@ export async function findSpell(name) {
 
     const lowerName = name.toLowerCase().trim();
 
-    // Try dnd5e.spells (SRD spells)
     const spellsIndex = await getCompendiumIndex('dnd5e.spells');
     const entry = spellsIndex.get(lowerName);
 
@@ -107,7 +103,6 @@ export async function findSpell(name) {
         return null;
     }
 
-    // Load full document
     const pack = game.packs.get(entry.packId);
     if (!pack) {
         return null;
@@ -137,7 +132,6 @@ export async function findSpells(names) {
         return results;
     }
 
-    // Collect all matching entries
     const toLoad = [];
     for (const name of names) {
         const lowerName = name.toLowerCase().trim();
@@ -147,7 +141,6 @@ export async function findSpells(names) {
         }
     }
 
-    // Batch load documents
     for (const { name, id } of toLoad) {
         try {
             const doc = await pack.getDocument(id);
@@ -178,7 +171,6 @@ export async function findItems(names) {
     const itemsIndex = await getCompendiumIndex('dnd5e.items');
     const equipIndex = await getCompendiumIndex('dnd5e.equipment');
 
-    // Collect all matching entries
     const toLoad = [];
     for (const name of names) {
         const lowerName = name.toLowerCase().trim();
@@ -188,7 +180,6 @@ export async function findItems(names) {
         }
     }
 
-    // Load documents
     for (const { name, entry } of toLoad) {
         try {
             const pack = game.packs.get(entry.packId);

@@ -19,7 +19,6 @@ const DND5E_ADAPTER = {
      * @returns {boolean} True if system is dnd5e 5.1+
      */
     isSupported() {
-        // Check if we're in a Foundry context with game.system available
         if (typeof game === 'undefined' || !game.system?.id) {
             return false;
         }
@@ -28,7 +27,6 @@ const DND5E_ADAPTER = {
             return false;
         }
 
-        // Parse version - require 5.1+
         const version = game.system.version;
         if (!version) {
             return false;
@@ -52,15 +50,12 @@ const DND5E_ADAPTER = {
     async createActor(statblock, options = {}) {
         const actorData = mapToDnd5eActor(statblock);
 
-        // Set folder if provided
         if (options.folder) {
             actorData.folder = options.folder.id;
         }
 
-        // Create the actor
         const actor = await Actor.create(actorData);
 
-        // Create embedded items (traits, actions, spells, gear)
         const items = await createEmbeddedItemsAsync(statblock);
         if (items.length > 0) {
             await actor.createEmbeddedDocuments('Item', items);
@@ -81,8 +76,6 @@ const DND5E_ADAPTER = {
     async updateActor(existing, statblock) {
         const actorData = mapToDnd5eActor(statblock);
 
-        // Update the actor's system data
-        // We need to be careful not to overwrite folder, permissions, etc.
         await existing.update({
             name: actorData.name,
             img: actorData.img,
@@ -90,7 +83,6 @@ const DND5E_ADAPTER = {
             flags: actorData.flags
         });
 
-        // Delete old items that we created (flagged with fromStatblock)
         const oldItems = existing.items.filter(item =>
             item.flags[MODULE_ID]?.fromStatblock === true
         );
@@ -102,7 +94,6 @@ const DND5E_ADAPTER = {
             );
         }
 
-        // Create new items
         const items = await createEmbeddedItemsAsync(statblock);
         if (items.length > 0) {
             await existing.createEmbeddedDocuments('Item', items);

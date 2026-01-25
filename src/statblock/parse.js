@@ -242,47 +242,32 @@ export function parseStatblock(yaml, filePath = '') {
     }
 
     return new StatblockData({
-        // Identity
         name: data.name || '',
         filePath,
-
-        // Core stats
         size: normalizeSize(data.size),
         type: data.type || '',
         subtype: data.subtype || '',
         alignment: data.alignment || '',
-
-        // Combat
         ac: normalizeAC(data.ac),
         hp: data.hp ?? null,
         hitDice: data.hit_dice || '',
         speed: normalizeSpeed(data.speed),
-
-        // Abilities
         abilities: normalizeStats(data.stats),
         savingThrows: normalizeSaves(data.saves),
         skills: normalizeSkillsaves(data.skillsaves),
-
-        // Traits
         damageVulnerabilities: normalizeCommaList(data.damage_vulnerabilities),
         damageResistances: normalizeCommaList(data.damage_resistances),
         damageImmunities: normalizeCommaList(data.damage_immunities),
         conditionImmunities: normalizeCommaList(data.condition_immunities),
         senses: normalizeSenses(data.senses),
         languages: normalizeCommaList(data.languages),
-
-        // Challenge
         cr: normalizeCR(data.cr),
-
-        // Features and Actions - pass through as-is
         traits: data.traits || null,
         actions: data.actions || null,
         bonusActions: data.bonus_actions || null,
         reactions: data.reactions || null,
         legendaryActions: data.legendary_actions || null,
         legendaryDescription: data.legendary_description || '',
-
-        // Spellcasting
         spells: data.spells || null
     });
 }
