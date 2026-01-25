@@ -8,6 +8,7 @@ import executePipeline from '../pipeline/executePipeline';
 import createImportPipeline from '../pipeline/importPipeline';
 import ProgressModal from './ProgressModal.js';
 import { loadDialogPreferences, saveDialogPreferences } from './preferences.js';
+import StatblockAdapterRegistry from '../statblock/registry.js';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -24,7 +25,9 @@ export default class ImportDialog extends HandlebarsApplicationMixin(Application
             importAssets: savedPrefs.importAssets ?? false,
             strictLineBreaks: savedPrefs.strictLineBreaks ?? false,
             splitByHeadings,
-            splitHeadingLevel: savedPrefs.splitHeadingLevel ?? 1
+            splitHeadingLevel: savedPrefs.splitHeadingLevel ?? 1,
+            importStatblocks: savedPrefs.importStatblocks ?? false,
+            statblockFolder: savedPrefs.statblockFolder ? game.folders?.get(savedPrefs.statblockFolder) : null
         });
     }
 
@@ -70,8 +73,21 @@ export default class ImportDialog extends HandlebarsApplicationMixin(Application
             strictLineBreaks: this.importOptions.strictLineBreaks,
             splitByHeadings: this.importOptions.splitByHeadings,
             splitHeadingLevel: this.importOptions.splitHeadingLevel,
-            dataPath: this.importOptions.dataPath
+            dataPath: this.importOptions.dataPath,
+            showStatblockOption: StatblockAdapterRegistry.isAvailable(),
+            importStatblocks: this.importOptions.importStatblocks,
+            statblockFolder: this.importOptions.statblockFolder?.id ?? null,
+            actorFolders: this._getActorFolders()
         };
+    }
+
+    _getActorFolders() {
+        if (typeof game === 'undefined' || !game.folders) {
+            return [];
+        }
+        return game.folders
+            .filter(f => f.type === 'Actor')
+            .map(f => ({ id: f.id, name: f.name }));
     }
 
     _onRender(context, options) {
@@ -139,6 +155,22 @@ export default class ImportDialog extends HandlebarsApplicationMixin(Application
             splitHeadingLevelSelect.value = String(this.importOptions.splitHeadingLevel);
             splitHeadingLevelSelect.addEventListener('change', event => {
                 this.importOptions.splitHeadingLevel = parseInt(event.target.value, 10);
+            });
+        }
+
+        const importStatblocksCheckbox = this.element.querySelector('input[name="importStatblocks"]');
+        if (importStatblocksCheckbox) {
+            importStatblocksCheckbox.addEventListener('change', async event => {
+                this.importOptions.importStatblocks = event.target.checked;
+                await this.render();
+            });
+        }
+
+        const statblockFolderSelect = this.element.querySelector('select[name="statblockFolder"]');
+        if (statblockFolderSelect) {
+            statblockFolderSelect.addEventListener('change', event => {
+                const folderId = event.target.value;
+                this.importOptions.statblockFolder = folderId ? game.folders.get(folderId) : null;
             });
         }
 
@@ -265,6 +297,8 @@ export default class ImportDialog extends HandlebarsApplicationMixin(Application
         this.importOptions.splitByHeadings = data.splitByHeadings || false;
         this.importOptions.splitHeadingLevel = parseInt(data.splitHeadingLevel, 10) || 1;
         this.importOptions.dataPath = data.dataPath || '';
+        this.importOptions.importStatblocks = data.importStatblocks || false;
+        this.importOptions.statblockFolder = data.statblockFolder ? game.folders.get(data.statblockFolder) : null;
 
         if (!this.importOptions.isValid()) {
             ui.notifications.warn(game.i18n.localize(`${MODULE_ID}.import.vault-path-hint`));
@@ -278,7 +312,9 @@ export default class ImportDialog extends HandlebarsApplicationMixin(Application
             strictLineBreaks: this.importOptions.strictLineBreaks,
             splitByHeadings: this.importOptions.splitByHeadings,
             splitHeadingLevel: this.importOptions.splitHeadingLevel,
-            dataPath: this.importOptions.dataPath
+            dataPath: this.importOptions.dataPath,
+            importStatblocks: this.importOptions.importStatblocks,
+            statblockFolder: this.importOptions.statblockFolder?.id ?? null
         });
 
         const showdownConverter = new showdown.Converter();

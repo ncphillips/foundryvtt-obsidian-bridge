@@ -16,6 +16,96 @@ import { extractCallouts } from '../callout/extract.js';
 import { replaceCalloutPlaceholders } from '../callout/replace.js';
 import { detectConflicts, filterSkippedFiles } from '../conflict/detectConflicts.js';
 import ConflictDialog from '../ui/ConflictDialog.js';
+import { extractStatblocks } from '../statblock/extract.js';
+import { parseStatblock } from '../statblock/parse.js';
+import StatblockAdapterRegistry from '../statblock/registry.js';
+import { id as MODULE_ID } from '../../module.json';
+
+/**
+ * Gets the parent folder path from a file path.
+ * @param {string} filePath - Full file path like "Bestiary/Bugbears/Bugbear Brute.md"
+ * @returns {string|null} Parent path like "Bestiary/Bugbears" or null if at root
+ */
+function getParentPath(filePath) {
+    if (!filePath) {
+        return null;
+    }
+    const lastSlash = filePath.lastIndexOf('/');
+    if (lastSlash <= 0) {
+        return null;
+    }
+    return filePath.substring(0, lastSlash);
+}
+
+/**
+ * Creates Actor folders to mirror the vault folder structure.
+ * @param {StatblockData[]} statblocks - Array of parsed statblocks
+ * @param {string} vaultRoot - Vault root path to strip (e.g., "Cormyr A Campaign/")
+ * @param {string[]} createdFolderIds - Array to track created folder IDs for rollback
+ * @returns {Promise<Map<string, Folder>>} Map of path to Folder
+ */
+async function createActorFolders(statblocks, vaultRoot, createdFolderIds) {
+    const folderMap = new Map();
+
+    const folderPaths = new Set();
+    for (const statblock of statblocks) {
+        let filePath = statblock.filePath;
+        if (vaultRoot && filePath.startsWith(vaultRoot)) {
+            filePath = filePath.substring(vaultRoot.length);
+        }
+        const parentPath = getParentPath(filePath);
+        if (parentPath) {
+            const parts = parentPath.split('/');
+            for (let i = 1; i <= parts.length; i++) {
+                folderPaths.add(parts.slice(0, i).join('/'));
+            }
+        }
+    }
+
+    if (folderPaths.size === 0) {
+        return folderMap;
+    }
+
+    const sortedPaths = Array.from(folderPaths).sort((a, b) => {
+        return a.split('/').length - b.split('/').length;
+    });
+
+    const existingFoldersIndex = new Map();
+    for (const folder of game.folders.filter(f => f.type === 'Actor')) {
+        const key = `${folder.folder?.id ?? null}:${folder.name}`;
+        existingFoldersIndex.set(key, folder);
+    }
+
+    for (const path of sortedPaths) {
+        const parts = path.split('/');
+        const name = parts[parts.length - 1];
+        const parentPath = parts.length > 1 ? parts.slice(0, -1).join('/') : null;
+        const parentId = parentPath ? folderMap.get(parentPath)?.id : null;
+
+        const lookupKey = `${parentId}:${name}`;
+        const existing = existingFoldersIndex.get(lookupKey);
+
+        if (existing) {
+            folderMap.set(path, existing);
+            continue;
+        }
+
+        const folder = await Folder.create({
+            name,
+            type: 'Actor',
+            folder: parentId
+        });
+
+        if (folder) {
+            folderMap.set(path, folder);
+            createdFolderIds.push(folder.id);
+            // Add to index so child folders can find it
+            existingFoldersIndex.set(`${parentId}:${name}`, folder);
+        }
+    }
+
+    return folderMap;
+}
 
 /**
  * Creates a configured pipeline for importing an Obsidian vault into Foundry.
@@ -23,19 +113,22 @@ import ConflictDialog from '../ui/ConflictDialog.js';
  * Pipeline phases:
  * 1. Filter files - Select files based on tree selection
  * 2. Prepare documents - Read file content and create MarkdownFile objects
- * 3. Extract frontmatter - Extract YAML frontmatter before markdown processing
- * 4. Extract callouts - Extract Obsidian callouts and replace with placeholders
- * 5. Convert line breaks - Convert single newlines to <br /> (conditional on strictLineBreaks)
- * 6. Replace callouts - Replace callout placeholders with rendered HTML
- * 7. Extract references - Extract links and assets from markdown
- * 8. Replace references - Replace references with placeholders
- * 9. Convert markdown - Convert markdown text to HTML
- * 10. Plan structure - Determine folder and journal entry structure
- * 11. Detect conflicts - Check for pages modified since last sync, prompt user
- * 12. Create documents - Create Foundry folders, journal entries, and pages
- * 13. Upload assets - Upload non-markdown files to data path (conditional)
- * 14. Resolve placeholders - Replace placeholders with actual UUIDs and paths
- * 15. Update content - Write final HTML content to journal pages
+ * 3. Prepare statblocks - Extract and parse statblock code blocks (conditional)
+ * 4. Detect statblock conflicts - Check for existing actors (conditional)
+ * 5. Import statblock actors - Create/update Actor documents (conditional)
+ * 6. Extract frontmatter - Extract YAML frontmatter before markdown processing
+ * 7. Extract callouts - Extract Obsidian callouts and replace with placeholders
+ * 8. Convert line breaks - Convert single newlines to <br /> (conditional on strictLineBreaks)
+ * 9. Replace callouts - Replace callout placeholders with rendered HTML
+ * 10. Extract references - Extract links and assets from markdown
+ * 11. Replace references - Replace references with placeholders
+ * 12. Convert markdown - Convert markdown text to HTML
+ * 13. Plan structure - Determine folder and journal entry structure
+ * 14. Detect conflicts - Check for pages modified since last sync, prompt user
+ * 15. Create documents - Create Foundry folders, journal entries, and pages
+ * 16. Upload assets - Upload non-markdown files to data path (conditional)
+ * 17. Resolve placeholders - Replace placeholders with actual UUIDs and paths
+ * 18. Update content - Write final HTML content to journal pages
  *
  * @param {import('../domain/ImportOptions').default} importOptions - Import configuration
  * @param {import('showdown').Converter} showdownConverter - Markdown to HTML converter
@@ -50,6 +143,7 @@ export default function createImportPipeline(importOptions, showdownConverter) {
         markdownFiles: null,
         structurePlan: null,
         callouts: new Map(),
+        statblocks: [],
     };
 
     const phases = [
@@ -79,6 +173,151 @@ export default function createImportPipeline(importOptions, showdownConverter) {
                 const markdownFiles = await prepareFilesForImport(ctx.filesToParse);
                 ctx.markdownFiles = markdownFiles;
                 return { markdownFiles: markdownFiles.length };
+            }
+        }),
+
+        new PhaseDefinition({
+            name: 'prepare-statblocks',
+            condition: ctx => {
+                const result = ctx.importOptions.importStatblocks && StatblockAdapterRegistry.isAvailable();
+                console.log('Obsidian Bridge | prepare-statblocks condition:', {
+                    importStatblocks: ctx.importOptions.importStatblocks,
+                    isAvailable: StatblockAdapterRegistry.isAvailable(),
+                    result
+                });
+                return result;
+            },
+            execute: async ctx => {
+                console.log('Obsidian Bridge | prepare-statblocks executing, files:', ctx.markdownFiles.length);
+                let parsed = 0;
+
+                for (const markdownFile of ctx.markdownFiles) {
+                    const blocks = extractStatblocks(markdownFile.content);
+                    console.log('Obsidian Bridge | File:', markdownFile.filePath, 'blocks found:', blocks.length);
+
+                    for (const block of blocks) {
+                        const statblock = parseStatblock(block.yaml, markdownFile.filePath);
+                        ctx.statblocks.push(statblock);
+                        parsed++;
+                    }
+                }
+
+                console.log('Obsidian Bridge | prepare-statblocks complete, parsed:', parsed);
+                return { parsed };
+            }
+        }),
+
+        new PhaseDefinition({
+            name: 'detect-statblock-conflicts',
+            condition: ctx => ctx.importOptions.importStatblocks && StatblockAdapterRegistry.isAvailable(),
+            execute: async ctx => {
+                if (!ctx.statblocks?.length) {
+                    console.log('Obsidian Bridge | detect-statblock-conflicts skipping, no statblocks');
+                    return { toCreate: [], toUpdate: [], toSkip: [] };
+                }
+                console.log('Obsidian Bridge | detect-statblock-conflicts executing, statblocks:', ctx.statblocks.length);
+                const toCreate = [];
+                const toUpdate = [];
+                const toSkip = [];
+
+                for (const statblock of ctx.statblocks) {
+                    const existingByFlag = game.actors.find(actor =>
+                        actor.flags[MODULE_ID]?.sourceFile === statblock.filePath
+                        && actor.name === statblock.name
+                    );
+
+                    if (existingByFlag) {
+                        statblock._action = 'update';
+                        statblock._existingActor = existingByFlag;
+                        toUpdate.push(statblock.name);
+                        continue;
+                    }
+
+                    const existingByName = game.actors.find(actor =>
+                        actor.name === statblock.name
+                        && !actor.flags[MODULE_ID]?.sourceFile
+                    );
+
+                    if (existingByName) {
+                        statblock._action = 'skip';
+                        toSkip.push(statblock.name);
+                        continue;
+                    }
+
+                    statblock._action = 'create';
+                    toCreate.push(statblock.name);
+                }
+
+                return { toCreate, toUpdate, toSkip };
+            }
+        }),
+
+        new PhaseDefinition({
+            name: 'import-statblock-actors',
+            condition: ctx => ctx.importOptions.importStatblocks && StatblockAdapterRegistry.isAvailable(),
+            execute: async ctx => {
+                if (!ctx.statblocks?.length) {
+                    console.log('Obsidian Bridge | import-statblock-actors skipping, no statblocks');
+                    return {
+                        created: [], updated: [], skipped: 0,
+                        actors: [], createdActorIds: [], createdFolderIds: []
+                    };
+                }
+                console.log('Obsidian Bridge | import-statblock-actors executing');
+                const adapter = StatblockAdapterRegistry.getAdapter();
+                console.log('Obsidian Bridge | adapter:', adapter ? 'found' : 'NOT FOUND');
+                const created = [];
+                const updated = [];
+                let skipped = 0;
+                const actors = [];
+                const createdActorIds = [];
+                const createdFolderIds = [];
+
+                const vaultRoot = ctx.importOptions.vaultPath ? `${ctx.importOptions.vaultPath}/` : '';
+                const folderMap = await createActorFolders(ctx.statblocks, vaultRoot, createdFolderIds);
+
+                for (const statblock of ctx.statblocks) {
+                    if (statblock._action === 'skip') {
+                        skipped++;
+                        continue;
+                    }
+
+                    if (statblock._action === 'update') {
+                        const actor = await adapter.updateActor(statblock._existingActor, statblock);
+                        updated.push(statblock.name);
+                        actors.push({ actor, wasCreated: false });
+                        continue;
+                    }
+
+                    let filePath = statblock.filePath;
+                    if (vaultRoot && filePath.startsWith(vaultRoot)) {
+                        filePath = filePath.substring(vaultRoot.length);
+                    }
+                    const folderPath = getParentPath(filePath);
+                    const folder = folderPath ? folderMap.get(folderPath) : null;
+
+                    const actor = await adapter.createActor(statblock, { folder });
+                    created.push(statblock.name);
+                    actors.push({ actor, wasCreated: true });
+                    createdActorIds.push(actor.id);
+                }
+
+                return { created, updated, skipped, actors, createdActorIds, createdFolderIds };
+            },
+            rollback: async (ctx, result) => {
+                for (const actorId of result?.createdActorIds || []) {
+                    const actor = game.actors.get(actorId);
+                    if (actor) {
+                        await actor.delete();
+                    }
+                }
+
+                for (const folderId of (result?.createdFolderIds || []).reverse()) {
+                    const folder = game.folders.get(folderId);
+                    if (folder) {
+                        await folder.delete();
+                    }
+                }
             }
         }),
 

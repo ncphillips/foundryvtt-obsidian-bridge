@@ -33,6 +33,11 @@ obsidian-bridge:
     data-path-label: Data path for non-markdown files
     data-path-hint: Directory where imported assets will be stored
 
+    statblock-label: Import Statblocks as Actors
+    statblock-hint: Create NPC actors from Fantasy Statblock code blocks
+    statblock-folder-label: Actor Folder
+    statblock-folder-none: "— Root —"
+
     import-button: Import
     cancel-button: Cancel
 
@@ -80,7 +85,13 @@ obsidian-bridge:
 
     filter-files: Filtering selected files
     prepare-documents: Preparing documents
+    prepare-statblocks: Parsing statblocks
+    detect-statblock-conflicts: Checking for existing actors
+    import-statblock-actors: Creating actors from statblocks
+    extract-frontmatter: Extracting frontmatter
+    extract-callouts: Extracting callouts
     convert-line-breaks: Converting line breaks
+    replace-callouts: Processing callouts
     extract-references: Extracting references
     replace-references: Replacing references
     convert-markdown: Converting markdown to HTML

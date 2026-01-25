@@ -86,6 +86,30 @@
         <p class="hint">{{localize "obsidian-bridge.import.data-path-hint"}}</p>
     </div>
     {{/if}}
+
+    {{#if showStatblockOption}}
+    <div class="form-group statblock-options">
+        <label>
+            <input type="checkbox" name="importStatblocks" {{checked importStatblocks}} />
+            {{localize "obsidian-bridge.import.statblock-label"}}
+        </label>
+        <p class="hint">{{localize "obsidian-bridge.import.statblock-hint"}}</p>
+    </div>
+
+    {{#if importStatblocks}}
+    <div class="form-group statblock-folder">
+        <label for="obsidian-statblock-folder">{{localize "obsidian-bridge.import.statblock-folder-label"}}</label>
+        <div class="form-fields">
+            <select id="obsidian-statblock-folder" name="statblockFolder">
+                <option value="">{{localize "obsidian-bridge.import.statblock-folder-none"}}</option>
+                {{#each actorFolders}}
+                <option value="{{this.id}}" {{#if (eq this.id ../statblockFolder)}}selected{{/if}}>{{this.name}}</option>
+                {{/each}}
+            </select>
+        </div>
+    </div>
+    {{/if}}
+    {{/if}}
     {{/if}}
 
     <footer class="form-footer flexrow">

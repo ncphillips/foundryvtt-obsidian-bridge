@@ -13,7 +13,9 @@ export default class ImportOptions {
         splitHeadingLevel: 1,
         importAssets: false,
         strictLineBreaks: false,
-        dataPath: ''
+        dataPath: '',
+        importStatblocks: false,
+        statblockFolder: null
     };
 
     constructor(options = {}) {
