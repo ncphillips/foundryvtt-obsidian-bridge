@@ -15,7 +15,8 @@ export default class ImportOptions {
         strictLineBreaks: false,
         dataPath: '',
         importStatblocks: false,
-        statblockFolder: null
+        statblockFolder: null,
+        destinationFolder: null
     };
 
     constructor(options = {}) {

@@ -456,7 +456,11 @@ export default function createImportPipeline(importOptions, showdownConverter) {
         new PhaseDefinition({
             name: 'create-documents',
             execute: async ctx => {
-                return await createJournals(ctx.structurePlan, ctx.markdownFiles);
+                return await createJournals(
+                    ctx.structurePlan,
+                    ctx.markdownFiles,
+                    ctx.importOptions.destinationFolder
+                );
             },
             rollback: async (ctx, result) => {
                 await rollbackJournals(

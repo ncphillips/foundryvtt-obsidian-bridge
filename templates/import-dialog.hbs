@@ -21,6 +21,18 @@
         <p class="hint">{{localize "obsidian-bridge.import.file-selection-hint"}}</p>
     </div>
 
+    <div class="form-group destination-folder">
+        <label for="obsidian-destination-folder">{{localize "obsidian-bridge.import.destination-folder-label"}}</label>
+        <div class="form-fields">
+            <select id="obsidian-destination-folder" name="destinationFolder">
+                <option value="">{{localize "obsidian-bridge.import.destination-folder-none"}}</option>
+                {{#each journalFolders}}
+                <option value="{{this.id}}" {{#if (eq this.id ../destinationFolder)}}selected{{/if}}>{{this.name}}</option>
+                {{/each}}
+            </select>
+        </div>
+    </div>
+
     <div class="form-group">
         <label>
             <input type="checkbox" name="combineNotes" {{checked combineNotes}} {{#if splitByHeadings}}disabled{{/if}} data-toggle-visibility="skipFolderCombine" />

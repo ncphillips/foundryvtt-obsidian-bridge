@@ -27,7 +27,8 @@ export default class ImportDialog extends HandlebarsApplicationMixin(Application
             splitByHeadings,
             splitHeadingLevel: savedPrefs.splitHeadingLevel ?? 1,
             importStatblocks: savedPrefs.importStatblocks ?? false,
-            statblockFolder: savedPrefs.statblockFolder ? game.folders?.get(savedPrefs.statblockFolder) : null
+            statblockFolder: savedPrefs.statblockFolder ? game.folders?.get(savedPrefs.statblockFolder) : null,
+            destinationFolder: savedPrefs.destinationFolder ? game.folders?.get(savedPrefs.destinationFolder) : null
         });
     }
 
@@ -77,7 +78,9 @@ export default class ImportDialog extends HandlebarsApplicationMixin(Application
             showStatblockOption: StatblockAdapterRegistry.isAvailable(),
             importStatblocks: this.importOptions.importStatblocks,
             statblockFolder: this.importOptions.statblockFolder?.id ?? null,
-            actorFolders: this._getActorFolders()
+            actorFolders: this._getActorFolders(),
+            destinationFolder: this.importOptions.destinationFolder?.id ?? null,
+            journalFolders: this._getJournalFolders()
         };
     }
 
@@ -87,6 +90,15 @@ export default class ImportDialog extends HandlebarsApplicationMixin(Application
         }
         return game.folders
             .filter(f => f.type === 'Actor')
+            .map(f => ({ id: f.id, name: f.name }));
+    }
+
+    _getJournalFolders() {
+        if (typeof game === 'undefined' || !game.folders) {
+            return [];
+        }
+        return game.folders
+            .filter(f => f.type === 'JournalEntry')
             .map(f => ({ id: f.id, name: f.name }));
     }
 
@@ -171,6 +183,14 @@ export default class ImportDialog extends HandlebarsApplicationMixin(Application
             statblockFolderSelect.addEventListener('change', event => {
                 const folderId = event.target.value;
                 this.importOptions.statblockFolder = folderId ? game.folders.get(folderId) : null;
+            });
+        }
+
+        const destinationFolderSelect = this.element.querySelector('select[name="destinationFolder"]');
+        if (destinationFolderSelect) {
+            destinationFolderSelect.addEventListener('change', event => {
+                const folderId = event.target.value;
+                this.importOptions.destinationFolder = folderId ? game.folders.get(folderId) : null;
             });
         }
 
@@ -299,6 +319,7 @@ export default class ImportDialog extends HandlebarsApplicationMixin(Application
         this.importOptions.dataPath = data.dataPath || '';
         this.importOptions.importStatblocks = data.importStatblocks || false;
         this.importOptions.statblockFolder = data.statblockFolder ? game.folders.get(data.statblockFolder) : null;
+        this.importOptions.destinationFolder = data.destinationFolder ? game.folders.get(data.destinationFolder) : null;
 
         if (!this.importOptions.isValid()) {
             ui.notifications.warn(game.i18n.localize(`${MODULE_ID}.import.vault-path-hint`));
@@ -314,7 +335,8 @@ export default class ImportDialog extends HandlebarsApplicationMixin(Application
             splitHeadingLevel: this.importOptions.splitHeadingLevel,
             dataPath: this.importOptions.dataPath,
             importStatblocks: this.importOptions.importStatblocks,
-            statblockFolder: this.importOptions.statblockFolder?.id ?? null
+            statblockFolder: this.importOptions.statblockFolder?.id ?? null,
+            destinationFolder: this.importOptions.destinationFolder?.id ?? null
         });
 
         const showdownConverter = new showdown.Converter();

@@ -33,6 +33,9 @@ obsidian-bridge:
     data-path-label: Data path for non-markdown files
     data-path-hint: Directory where imported assets will be stored
 
+    destination-folder-label: Destination Folder
+    destination-folder-none: "— Root —"
+
     statblock-label: Import Statblocks as Actors
     statblock-hint: Create NPC actors from Fantasy Statblock code blocks
     statblock-folder-label: Actor Folder

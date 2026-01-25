@@ -11,17 +11,20 @@
  *
  * @param {JournalStructurePlan} plan - The planned journal structure
  * @param {MarkdownFile[]} markdownFiles - Array of markdown files (will be mutated)
+ * @param {Folder|null} destinationFolder - Optional parent folder for imported content
  * @returns {Promise<{createdFolders: Folder[], createdEntries: JournalEntry[], createdPages: Array}>}
  * @throws {Error} If any document creation fails
  */
-export async function createJournals(plan, markdownFiles) {
+export async function createJournals(plan, markdownFiles, destinationFolder = null) {
     const createdFolders = [];
     const createdEntries = [];
     const createdPages = [];
 
+    const destinationFolderId = destinationFolder?.id ?? null;
+
     try {
-        const folderMap = await createFolders(plan.folders, createdFolders);
-        const entryMap = await createEntries(plan.entries, folderMap, createdEntries);
+        const folderMap = await createFolders(plan.folders, createdFolders, destinationFolderId);
+        const entryMap = await createEntries(plan.entries, folderMap, createdEntries, destinationFolderId);
         await createPages(plan.entries, entryMap, createdPages);
     } catch (error) {
         await rollbackJournals(createdPages, createdEntries, createdFolders);
@@ -31,7 +34,7 @@ export async function createJournals(plan, markdownFiles) {
     return { createdFolders, createdEntries, createdPages };
 }
 
-async function createFolders(folders, createdFolders) {
+async function createFolders(folders, createdFolders, destinationFolderId = null) {
     const folderMap = new Map();
 
     const existingFoldersIndex = new Map();
@@ -41,7 +44,9 @@ async function createFolders(folders, createdFolders) {
     }
 
     for (const folderPlan of folders) {
-        const parentId = folderPlan.parentPath ? folderMap.get(folderPlan.parentPath)?.folder.id : null;
+        const parentId = folderPlan.parentPath
+            ? folderMap.get(folderPlan.parentPath)?.folder.id
+            : destinationFolderId;
 
         const lookupKey = `${parentId}:${folderPlan.name}`;
         const existing = existingFoldersIndex.get(lookupKey);
@@ -68,7 +73,7 @@ async function createFolders(folders, createdFolders) {
     return folderMap;
 }
 
-async function createEntries(entries, folderMap, createdEntries) {
+async function createEntries(entries, folderMap, createdEntries, destinationFolderId = null) {
     const entryMap = new Map();
 
     const existingEntriesIndex = new Map();
@@ -78,7 +83,9 @@ async function createEntries(entries, folderMap, createdEntries) {
     }
 
     for (const entryPlan of entries) {
-        const folderId = entryPlan.folderPath ? folderMap.get(entryPlan.folderPath)?.folder.id : null;
+        const folderId = entryPlan.folderPath
+            ? folderMap.get(entryPlan.folderPath)?.folder.id
+            : destinationFolderId;
 
         const lookupKey = `${folderId}:${entryPlan.name}`;
         const existing = existingEntriesIndex.get(lookupKey);
